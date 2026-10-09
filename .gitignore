@@ -9,3 +9,5 @@ integration-result.json
 settings.json
 mods-index.json
 preview.png
+build/runtimes/
+build/runtime-downloads/

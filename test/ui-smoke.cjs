@@ -20,7 +20,8 @@ app.whenReady().then(async () => {
     await fs.mkdir(output, { recursive: true });
     ipcMain.handle('launcher:settings', () => ({ nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }));
     ipcMain.handle('launcher:versions', () => ({ latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
-    ipcMain.handle('launcher:save', (_, input) => input);
+    let savedSettings;
+    ipcMain.handle('launcher:save', (_, input) => { savedSettings = require('../src/config').validateSettings(input, input); return savedSettings; });
     let installedMods = [];
     ipcMain.handle('launcher:mods-list', () => installedMods);
     ipcMain.handle('launcher:mods-import', (_, input) => { assert.equal(input.loader, 'fabric'); installedMods = [{ file: 'local.jar', title: 'Local mod', enabled: true, icon: require('../src/ui/assets/island-textures.json').textures.dirt }]; return ['local.jar']; });
@@ -34,43 +35,87 @@ app.whenReady().then(async () => {
     await delay(2200);
     async function read() {
       return window.webContents.executeJavaScript(`(() => {
-        const canvas = document.getElementById('world-canvas');
+        const art = document.getElementById('home-art');
         const button = document.getElementById('play').getBoundingClientRect();
         const stage = document.getElementById('world-stage').getBoundingClientRect();
-        return {ready:canvas.dataset.ready,textures:canvas.dataset.textures,textureVersion:canvas.dataset.textureVersion,frames:Number(canvas.dataset.frames),angle:Number(canvas.dataset.angle),buttonCenter:button.x+button.width/2,stageCenter:stage.x+stage.width/2,scrollHeight:document.documentElement.scrollHeight,height:innerHeight,width:innerWidth,logo:document.getElementById('minecraft-logo').dataset.source,logoWidth:document.getElementById('minecraft-logo').naturalWidth,brandFont:document.getElementById('brand-name').dataset.source,rotationControl:!!document.getElementById('toggle-rotation'),statusVisible:!document.getElementById('status').parentElement.hidden,fallback:!document.getElementById('scene-fallback').hidden,disabled:document.getElementById('play').disabled};
+        return {ready:art.dataset.ready,imageWidth:art.naturalWidth,panX:Number(art.dataset.panX),panY:Number(art.dataset.panY),buttonCenter:button.x+button.width/2,stageCenter:stage.x+stage.width/2,scrollHeight:document.documentElement.scrollHeight,height:innerHeight,width:innerWidth,logoWidth:document.getElementById('minecraft-logo').naturalWidth,statusVisible:!document.getElementById('status').parentElement.hidden,disabled:document.getElementById('play').disabled};
       })()`);
     }
     let first = await read();
     for (let attempt = 0; first.ready !== 'true' && attempt < 15; attempt++) { await delay(500); first = await read(); }
     console.log('Initial scene:', JSON.stringify(first), JSON.stringify(errors));
     await fs.writeFile(path.join(output, 'home-1240.png'), (await window.webContents.capturePage()).toPNG());
-    assert.equal(first.ready, 'true'); assert.equal(first.fallback, false); assert.equal(first.disabled, false);
+    const glassBefore = (await window.webContents.capturePage({ x: 60, y: 440, width: 150, height: 150 })).toBitmap();
+    assert.equal(first.ready, 'true'); assert.ok(first.imageWidth > 1500); assert.equal(first.disabled, false);
     assert.ok(Math.abs(first.buttonCenter - first.stageCenter) < 1, 'Play is centered below the scene');
-    await delay(1000); const second = await read(); console.log('Animation diagnostics:', JSON.stringify({ first, second })); assert.ok(second.angle > first.angle + .01, 'Island rotates over time');
-    assert.equal(first.rotationControl, false); assert.equal(first.statusVisible, false);
-    assert.equal(first.logo, 'minecraft'); assert.equal(first.textures, 'minecraft'); assert.ok(first.logoWidth > 500); assert.equal(first.brandFont, 'custom');
+    window.show(); window.focus();
+    let moving;
+    for (let attempt = 0; attempt < 10; attempt++) {
+      await window.webContents.executeJavaScript("(() => { const home=document.getElementById('home'), r=home.getBoundingClientRect(); home.dispatchEvent(new PointerEvent('pointermove',{clientX:r.right-20,clientY:r.top+20,pointerType:'mouse'})); })()");
+      await delay(200); moving = await read();
+      if (moving.panX > .5 && moving.panY < -.5) break;
+    }
+    assert.ok(moving.panX > .5 && moving.panY < -.5, 'Artwork responds to the pointer');
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('shell-art').style.transform === document.getElementById('home-art').style.transform"), true, 'Glass backdrop follows the same animation frame');
+    const glassAfter = (await window.webContents.capturePage({ x: 60, y: 440, width: 150, height: 150 })).toBitmap();
+    assert.equal(glassBefore.equals(glassAfter), false, 'The rendered blur changes when the artwork moves');
+    await fs.writeFile(path.join(output, 'home-parallax.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.getElementById('home').dispatchEvent(new PointerEvent('pointerleave'))");
+    await delay(1000); const second = await read();
+    assert.ok(Math.abs(second.panX) < .01 && Math.abs(second.panY) < .01, 'Artwork returns to centre');
+    window.webContents.debugger.attach('1.3');
+    await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    await window.webContents.executeJavaScript("document.getElementById('home').dispatchEvent(new PointerEvent('pointermove',{clientX:1000,clientY:100,pointerType:'mouse'}))");
+    await delay(200);
+    assert.equal(await window.webContents.executeJavaScript("getComputedStyle(document.getElementById('home-art')).transform"), 'none', 'Reduced-motion preference disables the effect');
+    await window.webContents.debugger.sendCommand('Emulation.setEmulatedMedia', { features: [] });
+    window.webContents.debugger.detach();
+    assert.equal(first.statusVisible, false);
+    assert.ok(first.logoWidth > 500);
+    assert.equal(await window.webContents.executeJavaScript("!document.getElementById('brand-name') && !document.querySelector('.title-version') && !document.querySelector('.launch-branding img')"), true, 'Only the titlebar keeps launcher branding');
     const homeText = await window.webContents.executeJavaScript("document.getElementById('home').innerText + document.querySelector('.sidebar').innerText");
     assert.doesNotMatch(homeText, /OVERWORLD|Потяни|маленький большой|ПЕРВАЯ СБОРКА|Всё готово|ТЫСЯЧА ВОЗМОЖНОСТЕЙ|НЕОФИЦИАЛЬНЫЙ|ТВОИ ПРИКЛЮЧЕНИЯ/i);
     assert.ok(second.scrollHeight <= second.height + 1, 'Default window fits without scrolling');
     await window.webContents.executeJavaScript("document.querySelector('[data-page=settings]').click()");
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('settings').hidden"), false);
     await window.webContents.executeJavaScript("document.querySelector('[data-page=home]').click()");
+    async function profileSaved() {
+      for (let i = 0; i < 80; i++) {
+        if (await window.webContents.executeJavaScript("!document.getElementById('profiles-close').disabled")) return;
+        await delay(100);
+      }
+      throw new Error('Profile save did not finish');
+    }
+    await window.webContents.executeJavaScript("document.getElementById('profiles-open').click(); document.getElementById('nickname').value='SecondPlayer'; document.getElementById('profiles-form').requestSubmit()");
+    await profileSaved();
+    assert.deepEqual(savedSettings.profiles, ['Player', 'SecondPlayer']);
+    assert.equal(savedSettings.nickname, 'SecondPlayer');
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('profile-name').textContent"), 'SecondPlayer');
+    await window.webContents.executeJavaScript("document.querySelector('[aria-label=\"Изменить SecondPlayer\"]').click(); document.getElementById('nickname').value='RenamedPlayer'; document.getElementById('profiles-form').requestSubmit()");
+    await profileSaved();
+    assert.equal(savedSettings.nickname, 'RenamedPlayer');
+    await fs.writeFile(path.join(output, 'profiles-editor.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.querySelector('.profile-choice').click()");
+    await profileSaved(); assert.equal(savedSettings.nickname, 'Player');
+    await window.webContents.executeJavaScript("document.querySelector('[aria-label=\"Удалить RenamedPlayer\"]').click()");
+    await profileSaved(); assert.deepEqual(savedSettings.profiles, ['Player']);
+    await window.webContents.executeJavaScript("document.getElementById('profiles-close').click()");
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('profiles-dialog').open"), false);
     window.setSize(1020, 720);
     let small = await read();
     for (let attempt = 0; small.width === first.width && attempt < 20; attempt++) { await delay(250); small = await read(); }
     assert.ok(small.width < first.width, 'Window actually resized');
-    const resizeFrame = small.frames;
-    for (let attempt = 0; small.frames <= resizeFrame && attempt < 20; attempt++) { await delay(250); small = await read(); }
-    assert.ok(small.frames > resizeFrame, 'Scene renders after resizing');
+    assert.equal(small.ready, 'true', 'Artwork remains loaded after resizing');
     assert.ok(Math.abs(small.buttonCenter - small.stageCenter) < 1, 'Centered at minimum window size');
     assert.ok(small.scrollHeight <= small.height + 1, 'Minimum window fits without scrolling');
     await fs.writeFile(path.join(output, 'home-1020.png'), (await window.webContents.capturePage()).toPNG());
-    await window.webContents.executeJavaScript("document.querySelector('[data-page=mods]').click(); document.getElementById('loader').value='fabric'; document.getElementById('loader').dispatchEvent(new Event('change'))");
+    await window.webContents.executeJavaScript("document.getElementById('version').value='1.21.1|fabric'; document.getElementById('version').dispatchEvent(new Event('change')); document.querySelector('[data-page=mods]').click()");
     await delay(600);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('mods-minecraft-logo').naturalWidth > 500 && !document.getElementById('mods-minecraft-logo').hidden && !document.getElementById('mods-hero-art')"), true);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('mods-catalog') === null && document.getElementById('mods-install') === null"), true, 'Catalog is removed');
     await window.webContents.executeJavaScript("document.getElementById('mods-import').click()"); await delay(600);
     assert.equal(installedMods.length, 1);
+    assert.equal(savedSettings.version, '1.21.1'); assert.equal(savedSettings.loader, 'fabric');
     assert.ok(await window.webContents.executeJavaScript("[...document.querySelectorAll('#mods-installed-list .mod-cover')].some(i=>i.complete && i.naturalWidth>0)"), 'Local mod icon loads');
     window.show(); window.focus(); await delay(600);
     await fs.writeFile(path.join(output, 'mods-local.png'), (await window.webContents.capturePage()).toPNG());
@@ -81,25 +126,42 @@ app.whenReady().then(async () => {
     await delay(150);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('save').getBoundingClientRect().bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth"), true, 'Settings fit the minimum window');
     await fs.writeFile(path.join(output, 'settings-pixel.png'), (await window.webContents.capturePage()).toPNG());
+    for (let index = 0; index < 300; index++) window.webContents.send('launcher:event', { kind: 'log', message: `Buffered log sample ${index}` });
+    await delay(250);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent"), '', 'Hidden journal does not update the DOM for each line');
     await window.webContents.executeJavaScript("document.querySelector('[data-page=logs]').click()");
     await delay(150);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent.includes('Buffered log sample 0') && document.getElementById('log').textContent.includes('Buffered log sample 299')"), true, 'Opening the journal displays buffered messages');
     await fs.writeFile(path.join(output, 'logs-pixel.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.getElementById('clear-log').click()");
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent"), '');
+    window.webContents.send('launcher:event', { kind: 'log', message: 'New message after clearing' });
+    await delay(250);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent.includes('New message after clearing') && !document.getElementById('log').textContent.includes('Buffered log sample')"), true, 'Clearing the journal also clears its pending buffer');
     await window.webContents.executeJavaScript("document.querySelector('[data-page=home]').click()");
     window.setSize(1480, 1120); await delay(1200);
-    assert.equal(await window.webContents.executeJavaScript("document.getElementById('play').getBoundingClientRect().bottom <= innerHeight"), true, 'Play remains visible with enlarged island');
-    await fs.writeFile(path.join(output, 'home-large-bare-bones.png'), (await window.webContents.capturePage()).toPNG());
-    const angle = await window.webContents.executeJavaScript("document.getElementById('world-canvas').dataset.angle");
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('play').getBoundingClientRect().bottom <= innerHeight"), true, 'Play remains visible in a large window');
+    await fs.writeFile(path.join(output, 'home-art-large.png'), (await window.webContents.capturePage()).toPNG());
+    const pan = await window.webContents.executeJavaScript("document.getElementById('home-art').dataset.panX");
     window.webContents.send('launcher:event', { kind: 'state', state: 'preparing', message: 'Проверка файлов' });
     await delay(400);
-    assert.equal(await window.webContents.executeJavaScript("document.getElementById('world-canvas').dataset.angle"), angle, 'Island stops while preparing');
+    await window.webContents.executeJavaScript("document.getElementById('home').dispatchEvent(new PointerEvent('pointermove',{clientX:1000,clientY:100,pointerType:'mouse'}))");
+    await delay(200);
+      assert.notEqual(await window.webContents.executeJavaScript("document.getElementById('home-art').dataset.panX"), pan, 'Artwork remains interactive while preparing');
+      assert.equal(await window.webContents.executeJavaScript("!document.getElementById('launch-overlay').hidden"), true, 'Loading appears during preparation');
+      window.webContents.send('launcher:event', { kind: 'progress', percent: 42, message: 'Загрузка файлов' });
+      await delay(100);
+      assert.equal(await window.webContents.executeJavaScript("document.getElementById('launch-progress').value"), 42);
     window.webContents.send('launcher:event', { kind: 'state', state: 'launching' });
     await delay(1800);
-    const transition = await window.webContents.executeJavaScript("({zoom:Number(document.getElementById('world-canvas').dataset.zoom),angle:document.getElementById('world-canvas').dataset.angle,visible:!document.getElementById('launch-overlay').hidden,text:document.getElementById('launch-overlay').innerText})");
-    assert.ok(transition.zoom > 2.5); assert.equal(transition.angle, angle); assert.equal(transition.visible, true); assert.match(transition.text, /Загрузка игры/);
+    const transition = await window.webContents.executeJavaScript("({zoom:document.getElementById('world-stage').classList.contains('art-zoom'),visible:!document.getElementById('launch-overlay').hidden,text:document.getElementById('launch-overlay').innerText})");
+    assert.equal(transition.zoom, true); assert.equal(transition.visible, true); assert.match(transition.text, /Загрузка игры/);
+      assert.ok(await window.webContents.executeJavaScript("new DOMMatrixReadOnly(getComputedStyle(document.querySelector('.art-motion')).transform).m11 > 1.2"), 'Launch transition actually enlarges the artwork');
+      assert.match(await window.webContents.executeJavaScript("getComputedStyle(document.querySelector('.art-motion')).filter"), /grayscale\(0\.85\)/);
     await fs.writeFile(path.join(output, 'launch-transition.png'), (await window.webContents.capturePage()).toPNG());
     window.webContents.send('launcher:event', { kind: 'error', message: 'Проверка восстановления после ошибки' });
     await delay(400);
-    assert.equal(await window.webContents.executeJavaScript("document.getElementById('launch-overlay').hidden && Number(document.getElementById('world-canvas').dataset.zoom) === 1"), true, 'Failure restores menu');
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('launch-overlay').hidden && !document.getElementById('world-stage').classList.contains('art-zoom')"), true, 'Failure restores menu');
     await window.webContents.executeJavaScript("document.getElementById('window-maximize').click()");
     for (let attempt = 0; !window.isMaximized() && attempt < 20; attempt++) await delay(100);
     assert.equal(window.isMaximized(), true, 'Custom titlebar maximizes the real window');
@@ -113,7 +175,7 @@ app.whenReady().then(async () => {
     assert.equal(window.isMinimized(), true, 'Custom titlebar minimizes the window');
     window.restore();
     assert.equal(errors.length, 0, `Renderer errors: ${errors.join('; ')}`);
-    const result = { ok: true, defaultWindow: first, minimumWindow: small, animation: { from: first.angle, to: second.angle }, automaticRotation: true, branding: true, rendererErrors: errors };
+    const result = { ok: true, defaultWindow: first, minimumWindow: small, parallax: { moved: moving, reset: second }, branding: true, rendererErrors: errors };
     await fs.writeFile(path.join(output, 'ui-result.json'), JSON.stringify(result, null, 2));
     console.log(JSON.stringify(result));
     await window.webContents.executeJavaScript("document.getElementById('window-close').click()");

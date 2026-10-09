@@ -1,0 +1,39 @@
+/* Night stone and warm gold, matching the supplied sidebar reference. */
+.titlebar { background: linear-gradient(90deg, #151c27, #10151e 45%, #171d28); border-top: 2px solid #6c7787; border-bottom: 2px solid #0a0e15; box-shadow: inset 0 -1px #455064; padding-left: 22px; }
+.titlebar::before { content: ''; position: absolute; left: 0; top: -2px; width: 10px; height: 10px; border-left: 2px solid #dabb72; border-top: 2px solid #dabb72; transform: skewY(-45deg); pointer-events: none; }
+.window-title { font: 13px/1.4 'Segoe UI', sans-serif; color: #d7dbea; gap: 14px; text-shadow: none; }
+.title-product b { color: #f3cd67; margin-right: 9px; letter-spacing: .6px; }
+.title-version { padding-left: 15px; color: #c1c9d8; font: 11px/1.5 PlayPixel, monospace; border-left-color: #46536a; }
+.title-coin { width: 21px; height: 23px; border: 0; clip-path: none; background: url('assets/sidebar-icons/cube.svg') center / contain no-repeat; box-shadow: none; filter: drop-shadow(0 0 5px #e4aa3444); }
+.window-button { background: #202936; border: 1px solid #4f5d72; box-shadow: inset 0 1px #78899e33, 0 2px #080d15; color: #b4bed0; }
+.window-button:hover { background: #384457; color: #ffdf89; }
+.is-maximized .maximize-symbol { box-shadow: 3px -3px #202936, 3px -3px 0 2px currentColor; }
+.sidebar { position: sticky; isolation: isolate; width: 280px; padding: 30px 18px 16px; background: radial-gradient(ellipse at 50% 5%, #26354666, transparent 34%), #101720; border-right: 2px solid #637087; border-left: 2px solid #6d6046; box-shadow: inset -4px 0 #080d14, inset 3px 0 #03060a, 3px 0 #0b1018; }
+.sidebar::before { content: ''; position: absolute; inset: 0; z-index: -1; background: #cbd0d5a6; backdrop-filter: blur(20px) saturate(.35); mask: url('assets/sidebar-glass.svg') 0 0 / 128px 128px repeat; pointer-events: none; }
+.sidebar::after { display: none; }
+.brand { padding: 14px 4px 26px; border-bottom: 1px solid #65718466; box-shadow: 0 2px #050a12; }
+#brand-name { width: 100%; filter: none; }
+.brand small { font: 10px/1.6 'Segoe UI', sans-serif; font-weight: 600; letter-spacing: 7px; color: #f0c55e; margin-top: 10px; padding-left: 7px; }
+.sidebar nav { margin-top: 14px; gap: 14px; }
+.nav-button { font: 15px/1.4 'Segoe UI', sans-serif; font-weight: 500; color: #d6dae7; gap: 16px; min-height: 61px; padding: 13px 15px; border: 2px solid #364254; background: linear-gradient(120deg, #29313eeb, #18212feb); box-shadow: inset 0 1px #8d9baa33, inset 0 -2px #111823, 0 3px 0 #060b12, 0 0 0 1px #080e16; border-radius: 2px; text-shadow: 0 1px #090f19; }
+.nav-button::after { display: none; }
+.nav-button:hover:not(.active) { background: linear-gradient(120deg, #364253, #253145); border-color: #68798f; }
+.nav-button.active { color: #ffefb3; border-color: #b89443; background: linear-gradient(115deg, #6b572bdc, #2e2c25f5); box-shadow: inset 0 2px #ffe3a0aa, inset 0 -2px #6a5124, 0 3px #080c13, -2px 0 #ffdf7b, 0 0 15px #eeb93233; }
+.nav-button.active::before { content: ''; display: block; position: absolute; inset: -2px; border: 2px solid #f6d477; border-right-color: #a5823d; clip-path: polygon(0 0,40% 0,40% 4px,4px 4px,4px calc(100% - 4px),18% calc(100% - 4px),18% 100%,0 100%); background: none; z-index: 1; pointer-events: none; }
+.nav-icon { width: 28px; height: 28px; flex-shrink: 0; clip-path: none !important; background: currentColor; mask: var(--icon) center / contain no-repeat; }
+[data-page=home] .nav-icon { --icon: url('assets/sidebar-icons/creeper.svg'); }
+[data-page=mods] .nav-icon { --icon: url('assets/sidebar-icons/mods.svg'); }
+[data-page=settings] .nav-icon { --icon: url('assets/sidebar-icons/settings.svg'); }
+[data-page=logs] .nav-icon { --icon: url('assets/sidebar-icons/logs.svg'); }
+#card-folder .nav-icon { --icon: url('assets/sidebar-icons/folder.svg'); }
+.nav-dot { width: 9px; height: 9px; background: #deb554; box-shadow: inset 1px 1px #ffde80, inset -1px -1px #927030; }
+.sidebar-bottom { padding-top: 18px; }
+.profile { min-height: 83px; padding: 12px; gap: 14px; border: 2px solid #4d5c72; background: linear-gradient(125deg, #222c3beb, #101a29f5); box-shadow: inset 0 1px #9baac34d, inset 0 -2px #090f19, 0 3px #03070c, 0 0 0 2px #090e16; }
+.avatar { width: 52px; height: 52px; border: 2px solid #99703e; background: url('assets/sidebar-icons/steve.svg') center / cover; box-shadow: inset 0 0 0 2px #17120b, 0 2px #060b13; image-rendering: pixelated; }
+.avatar::before, .avatar::after, .avatar i { display: none; }
+.profile-info { min-width: 0; flex: 1; }
+.profile strong { font: 16px/1.4 'Segoe UI', sans-serif; font-weight: 700; color: #f2f3f6; }
+.profile-status { display: block; margin-top: 4px; width: 6px; height: 6px; background: #65e16a; border-radius: 50%; box-shadow: 0 0 5px #65e16a55; }
+.profile-marker { width: 13px; height: 8px; background: #f4d16f; clip-path: polygon(0 0,100% 0,100% 25%,75% 25%,75% 50%,60% 50%,60% 75%,40% 75%,40% 50%,25% 50%,25% 25%,0 25%); filter: drop-shadow(0 0 3px #cfa342); }
+@media (max-width: 1100px) { .sidebar { width: 250px; padding-left: 14px; padding-right: 14px; } .nav-button { font-size: 14px; gap: 12px; padding-left: 12px; padding-right: 12px; } .nav-icon { width: 25px; height: 25px; } }
+@media (max-height: 796px) { .sidebar { padding-top: 12px; padding-bottom: 12px; } .brand { padding-top: 6px; padding-bottom: 18px; } #brand-name { max-width: 220px; margin: 0 auto; } .brand small { margin-top: 5px; font-size: 9px; } .sidebar nav { margin-top: 14px; gap: 11px; } .nav-button { min-height: 53px; padding-top: 10px; padding-bottom: 10px; } .profile { min-height: 74px; padding: 9px 11px; } .avatar { width: 46px; height: 46px; } }

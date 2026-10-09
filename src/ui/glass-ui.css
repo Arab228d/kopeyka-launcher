@@ -1,0 +1,29 @@
+/* Clear surfaces keep the artwork visible behind the controls. */
+.app-shell { background: url('assets/home-artwork.png') left center / auto 110vh no-repeat; }
+.sidebar { padding-top: 26px; overflow: hidden; background: #141a2240; backdrop-filter: blur(12px) saturate(.6); border-left: 0; border-right: 1px solid #d7e0ec55; box-shadow: inset -1px 0 #ffffff12, 3px 0 18px #080c1433; }
+.sidebar nav { margin-top: 0; }
+.nav-button { background: linear-gradient(120deg, #26324470, #14203455); border-color: #8fa8ca45; box-shadow: inset 0 1px #d4e4ff22, 0 3px #050b1455; backdrop-filter: blur(5px); }
+.nav-button:hover:not(.active) { background: linear-gradient(120deg, #3e536f88, #22324977); border-color: #b7d0ee88; }
+.nav-button.active { background: linear-gradient(115deg, #a081354d, #61502638); border-color: #e1c073; box-shadow: inset 0 1px #fff0bb88, -1px 0 #ffdf7b, 0 0 15px #eeb93222; }
+.profile { background: linear-gradient(125deg, #23344b77, #14223955); border-color: #9fb5d466; box-shadow: inset 0 1px #e5efff2b, 0 3px #02071366; backdrop-filter: blur(5px); }
+.play-panel { padding: 18px 24px 12px; background: transparent; border: 0; box-shadow: none; }
+.play-panel > .launch-glow { margin-bottom: 24px; }
+.play-fields { gap: 18px; }
+.play-fields label { color: #f3f7ff; font: 8px/1.7 PlayPixel, monospace; text-shadow: 2px 2px #0c172b, 0 0 10px #0b152d; }
+.field-shell { padding: 2px; background: #13243a40; border: 2px solid #e3edff66; box-shadow: inset 0 1px #eff6ff22, 0 4px 16px #07142633; backdrop-filter: blur(5px); clip-path: polygon(5px 0,calc(100% - 5px) 0,calc(100% - 5px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 5px) calc(100% - 3px),calc(100% - 5px) 100%,5px 100%,5px calc(100% - 3px),0 calc(100% - 3px),0 3px,5px 3px); }
+.field-shell::before { display: none; }
+.field-shell:hover { background: #20365155; border-color: #f2f6ffb3; }
+.field-shell:focus-within { background: #21334a55; border-color: #ffe19a; box-shadow: inset 0 1px #fff7d74d, 0 0 10px #f3c96433; }
+.play-fields select, .play-fields input { background: transparent; color: #fff; height: 43px; padding-left: 14px; text-shadow: 2px 2px #172133; }
+.field-arrow { background: #f0f5ff; top: 23px; }
+.profile-loader { margin-top: 17px; padding: 9px 16px; color: #fff1c3; background: #14283d30; border: 1px solid #e1edff33; font: 8px/1.6 PlayPixel, monospace; backdrop-filter: blur(4px); text-shadow: 1px 2px #101c2e; }
+.profile-loader:hover { background: #20365166; color: #fff6dc; border-color: #f2d49199; }
+.status-row { background: #0c1b32a6; padding: 9px 12px; border: 1px solid #bbd2f733; backdrop-filter: blur(4px); }
+.world-heading { display: flex; flex-direction: column; align-items: center; min-height: 104px; gap: 8px; transform: translateY(10px); }
+/* Minecraft's PNG has 80 transparent rows below the actual lettering. */
+.world-heading .minecraft-logo { width: 420px; height: 72.1875px; max-width: 80%; object-fit: cover; object-position: center top; margin: 0; transform: none; }
+.world-heading .java-logo { width: 180px; height: 19.3359px; object-fit: cover; object-position: center top; margin: 0; }
+#mods-minecraft-logo { aspect-ratio: 1024 / 176; object-fit: cover; object-position: center top; }
+#mods-java-logo { aspect-ratio: 512 / 55; object-fit: cover; object-position: center top; margin-top: 7px; }
+.launch-branding { padding: 30px 22px; background: #0e1b302b; border: 1px solid #d9e6ff33; backdrop-filter: blur(5px); }
+@media (max-height: 796px) { .sidebar { padding-top: 20px; } .world-heading { min-height: 86px; gap: 7px; } .world-heading .minecraft-logo { width: 360px; height: 61.875px; } .world-heading .java-logo { width: 155px; height: 16.6504px; } .play-panel > .launch-glow { margin-bottom: 18px; } .play-panel { padding-top: 14px; padding-bottom: 9px; } }

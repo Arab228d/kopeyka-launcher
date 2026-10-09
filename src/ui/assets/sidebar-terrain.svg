@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="280" height="380" viewBox="0 0 280 380" shape-rendering="crispEdges"><defs>
+<pattern id="dirt" width="16" height="16" patternUnits="userSpaceOnUse"><rect width="16" height="16" fill="#493623"/><path d="M0 1h5v4H0zM9 8h4v4H9z" fill="#68482c"/><path d="M6 5h4v3H6zM0 13h4v3H0z" fill="#32291e"/><path d="M12 1h3v3h-3z" fill="#80633e"/></pattern>
+<pattern id="grass" width="16" height="12" patternUnits="userSpaceOnUse"><rect width="16" height="12" fill="#456a24"/><path d="M0 0h7v4H0zM9 5h7v3H9zM3 8h4v4H3z" fill="#607f2c"/><path d="M8 0h5v3H8zM0 5h3v4H0z" fill="#314a1c"/></pattern>
+<radialGradient id="glow"><stop stop-color="#f8c25e" stop-opacity=".55"/><stop offset=".35" stop-color="#efa331" stop-opacity=".18"/><stop offset="1" stop-color="#ed9d28" stop-opacity="0"/></radialGradient>
+<linearGradient id="shade" x2="0" y2="1"><stop stop-color="#070f18" stop-opacity="0"/><stop offset="1" stop-color="#080f18" stop-opacity=".6"/></linearGradient>
+<g id="block"><path d="M0 0 28 10 28 48 0 38Z" fill="url(#dirt)"/><path d="m28 10 28-10v38L28 48Z" fill="#34291e"/><path d="m0 0 28-10L56 0 28 10Z" fill="url(#grass)"/><path d="m0 0 28 10v7l-7-2v-4l-5-2v7l-5-2V9L6 7v5l-6-2Z" fill="#446022"/><path d="m28 10 28-10v7l-7 2v5l-5 2v-6l-8 3v5l-8 3Z" fill="#2c431a"/></g>
+<g id="torch"><path d="M-2 0h5v27h-5z" fill="#885628"/><path d="M0 0h3v27H0z" fill="#c58a3c"/><path d="M-3-9h7v12h-7z" fill="#e59120"/><path d="M-2-13h5v12h-5z" fill="#ffcf5f"/><path d="M-1-11h3v7h-3z" fill="#fff5bd"/></g>
+</defs>
+<use href="#block" x="0" y="176"/>
+<path d="M24 176v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="54" y="176"/>
+<use href="#block" x="108" y="177"/>
+<use href="#block" x="108" y="142"/>
+<use href="#block" x="162" y="178"/>
+<use href="#block" x="162" y="143"/>
+<use href="#block" x="162" y="108"/>
+<path d="M186 108v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="216" y="178"/>
+<use href="#block" x="216" y="143"/>
+<use href="#block" x="216" y="108"/>
+<use href="#block" x="270" y="177"/>
+<use href="#block" x="270" y="142"/>
+<use href="#block" x="-81" y="205"/>
+<path d="M-57 205v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="-27" y="205"/>
+<use href="#block" x="27" y="206"/>
+<use href="#block" x="27" y="171"/>
+<use href="#block" x="81" y="206"/>
+<use href="#block" x="81" y="171"/>
+<path d="M105 171v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="135" y="207"/>
+<use href="#block" x="135" y="172"/>
+<use href="#block" x="135" y="137"/>
+<use href="#block" x="189" y="206"/>
+<use href="#block" x="189" y="171"/>
+<use href="#block" x="243" y="206"/>
+<use href="#block" x="243" y="171"/>
+<path d="M267 171v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="-54" y="234"/>
+<use href="#block" x="0" y="235"/>
+<use href="#block" x="0" y="200"/>
+<use href="#block" x="54" y="234"/>
+<path d="M78 234v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="108" y="235"/>
+<use href="#block" x="108" y="200"/>
+<use href="#block" x="162" y="235"/>
+<use href="#block" x="162" y="200"/>
+<use href="#block" x="216" y="234"/>
+<path d="M240 234v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="270" y="235"/>
+<use href="#block" x="270" y="200"/>
+<use href="#block" x="-81" y="263"/>
+<use href="#block" x="-27" y="263"/>
+<path d="M-3 263v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="27" y="264"/>
+<use href="#block" x="27" y="229"/>
+<use href="#block" x="81" y="263"/>
+<use href="#block" x="135" y="263"/>
+<path d="M159 263v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="189" y="264"/>
+<use href="#block" x="189" y="229"/>
+<use href="#block" x="243" y="263"/>
+<use href="#block" x="-54" y="292"/>
+<path d="M-30 292v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="0" y="292"/>
+<use href="#block" x="54" y="292"/>
+<use href="#block" x="108" y="292"/>
+<path d="M132 292v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<use href="#block" x="162" y="292"/>
+<use href="#block" x="216" y="292"/>
+<use href="#block" x="270" y="292"/>
+<path d="M294 292v-9h3v5h3v-8h3v12" fill="#65872d"/>
+<circle cx="236" cy="117" r="72" fill="url(#glow)"/><use href="#torch" x="236" y="126"/>
+<circle cx="175" cy="204" r="72" fill="url(#glow)"/><use href="#torch" x="175" y="213"/>
+<circle cx="66" cy="274" r="72" fill="url(#glow)"/><use href="#torch" x="66" y="283"/>
+<rect width="280" height="380" fill="url(#shade)"/></svg>

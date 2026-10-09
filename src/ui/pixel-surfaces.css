@@ -1,0 +1,13 @@
+.app-shell { position: relative; isolation: isolate; background: none; }
+.shell-backdrop { position: absolute; inset: 0; overflow: hidden; z-index: -1; pointer-events: none; }
+#shell-art { position: absolute; inset: -40px; width: calc(100% + 80px); height: calc(100% + 80px); object-fit: cover; object-position: left center; backface-visibility: hidden; }
+:root {
+  --surface-shape: polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px),0 12px,4px 12px,4px 4px,12px 4px);
+}
+.nav-button, .profile, .launch-side, .field-shell, .secondary-button, .settings-card, .optifine-panel, .profile-row { clip-path: var(--surface-shape); border-radius: 0; }
+.profile, .settings-card, .optifine-panel { overflow: hidden; }
+#profiles-dialog { border-radius: 12px; }
+#profiles-dialog input { border-radius: 6px; }
+.profile-row { padding: 10px 12px; }
+.secondary-button { min-height: 36px; }
+@media (prefers-reduced-motion: reduce) { #shell-art { transform: none !important; } }

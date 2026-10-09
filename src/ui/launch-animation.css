@@ -1,0 +1,15 @@
+#launch-overlay { mix-blend-mode: normal; animation-duration: .45s; }
+body.launch-transition::after { background: linear-gradient(#0b142022, #0b142066); }
+.launch-branding { padding: 30px 22px; background: transparent; border: 0; backdrop-filter: none; animation: loading-arrive .55s ease both; }
+.launch-branding p { font-size: 17px; color: white; margin: 22px 0; }
+.loading-pixel { width: 28px; height: 28px; margin: auto; border: 5px solid #ffffff33; border-top-color: #efc66a; border-right-color: #efc66a; animation: loading-spin 1.2s steps(8) infinite; }
+#launch-detail { display: block; margin: 18px auto 0; max-width: 440px; color: #e3e8ef; font: 12px/1.6 'Segoe UI', sans-serif; overflow-wrap: anywhere; }
+#launch-progress { width: 240px; height: 6px; margin: auto; }
+#launch-progress::-webkit-progress-bar { background: #17263899; }
+#launch-progress::-webkit-progress-value { background: #efc66a; transition: width .12s; }
+.loading-track { width: 240px; }
+.loading-track i { width: 80px; }
+@keyframes launch-loading { from { transform: translateX(-80px); } to { transform: translateX(240px); } }
+@keyframes loading-spin { to { transform: rotate(360deg); } }
+@keyframes loading-arrive { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .launch-branding, .loading-pixel { animation: none; } }

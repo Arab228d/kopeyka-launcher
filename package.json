@@ -1,17 +1,19 @@
 {
   "name": "kopeyka-launcher",
-  "version": "0.1.0-alpha",
+  "version": "0.2.0-beta",
   "description": "KOPEYKA Laucher — Minecraft Java launcher for Windows",
   "main": "src/main.js",
   "author": "KOPEYKA",
   "private": true,
   "scripts": {
-    "start": "npm run build:scene && electron .",
+    "start": "electron .",
     "build:scene": "esbuild src/scene/scene.js --bundle --minify --format=iife --outfile=src/ui/scene.bundle.js",
-    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js",
-    "test:ui": "npm run build:scene && electron test/ui-smoke.cjs",
-    "build": "npm run build:scene && electron-builder --win portable --x64",
-    "build:installer": "npm run build:scene && electron-builder --win nsis --x64"
+    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js",
+    "test:ui": "electron test/ui-smoke.cjs",
+    "build": "npm run build:installer",
+    "build:installer": "npm run prepare:runtimes && electron-builder --win nsis --x64",
+    "prepare:runtimes": "node scripts/prepare-runtimes.cjs",
+    "build:portable": "npm run prepare:runtimes && electron-builder --win portable --x64"
   },
   "dependencies": {
     "adm-zip": "0.5.16",
@@ -31,27 +33,39 @@
     },
     "files": [
       "src/**/*",
+      "!src/scene/**/*",
+      "!src/ui/scene.bundle.js",
       "package.json"
     ],
     "win": {
-      "target": "portable",
+      "target": "nsis",
       "signAndEditExecutable": false
     },
     "nsis": {
       "artifactName": "KOPEYKA-Laucher-Setup-${version}.exe",
-      "oneClick": false,
+      "oneClick": true,
       "perMachine": false,
-      "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
       "shortcutName": "KOPEYKA Laucher",
       "deleteAppDataOnUninstall": false,
       "installerLanguages": [
         "ru_RU"
-      ]
+      ],
+      "runAfterFinish": true
     },
     "portable": {
       "artifactName": "KOPEYKA-Laucher-${version}.exe"
-    }
+    },
+    "extraResources": [
+      {
+        "from": "build/runtimes",
+        "to": "runtimes",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   }
 }

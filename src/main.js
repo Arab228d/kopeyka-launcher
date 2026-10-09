@@ -12,10 +12,11 @@ const mods = require('./mods');
 const { prepareLoader, importOptifine } = require('./loaders');
 const { launchMemory, launchFailure } = require('./launch-health');
 const { registerWindowControls } = require('./window-controls');
+const { createProgressSender } = require('./progress-events');
 let window, settings, manifest, busy = false, game;
 const defaults = () => ({ nickname: 'Player', memory: os.totalmem() < 8 * 1073741824 ? 2 : 4, version: '1.21.1', snapshots: false, historical: false, loader: 'vanilla', gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft') });
 const configPath = () => path.join(app.getPath('userData'), 'settings.json');
-function send(event) { if (window && !window.isDestroyed()) window.webContents.send('launcher:event', event); }
+const send = createProgressSender(event => { if (window && !window.isDestroyed()) window.webContents.send('launcher:event', event); });
 async function save(input) {
   const next = validateSettings(input, defaults());
   await fs.mkdir(app.getPath('userData'), { recursive: true });
@@ -98,16 +99,17 @@ app.whenReady().then(async () => {
       const version = data.versions.find(v => v.id === config.version);
       if (!version) throw new Error('Эта версия отсутствует в списке Minecraft.');
       const { metadata } = await prepareMinecraft(config.gameDirectory, version, report);
-      const javaPath = await ensureJava(metadata.javaVersion?.majorVersion || 8, path.join(app.getPath('userData'), 'runtimes'), report);
+      const javaPath = await ensureJava(metadata.javaVersion?.majorVersion || 8, path.join(app.getPath('userData'), 'runtimes'), report, app.isPackaged ? path.join(process.resourcesPath, 'runtimes') : path.join(__dirname, '../build/runtimes'));
       const loader = await prepareLoader(config, metadata, javaPath, report);
       await fs.mkdir(config.gameDirectory, { recursive: true });
       const memory = launchMemory(config.memory, os.totalmem(), os.freemem());
       log(`Память Java: ${memory} ГБ (выбрано ${config.memory} ГБ). Java: ${javaPath}`);
       const client = new GameClient();
-      let ready = false, transitionFinished = false, startupFailed = false, transitionTimer;
+      let ready = false, startupFailed = false;
       function closeWhenReady() {
-        if (ready && transitionFinished && !startupFailed && game) {
+        if (ready && !startupFailed && game) {
           log('Окно игры инициализировано. Закрываем лаунчер.');
+          if (window && !window.isDestroyed()) window.hide();
           app.quit();
         }
       }
@@ -125,14 +127,14 @@ app.whenReady().then(async () => {
       });
       if (!child?.pid) throw launchError || new Error('Minecraft не запустился. Подробности в журнале.');
       game = child;
-      child.once('error', error => { startupFailed = true; clearTimeout(transitionTimer); send({ kind: 'error', message: error.message }); });
+      child.once('error', error => { startupFailed = true; send({ kind: 'error', message: error.message }); });
       child.once('close', code => {
-        startupFailed = true; clearTimeout(transitionTimer);
+        startupFailed = true;
         game = null; logHandle.close().catch(() => {});
         send(code === 0 ? { kind: 'state', state: 'idle', message: 'Игра завершена. Можно отправляться снова!' } : { kind: 'error', message: launchFailure(recentOutput, code) });
       });
       send({ kind: 'state', state: 'launching', message: 'Загрузка игры' });
-      transitionTimer = setTimeout(() => { transitionFinished = true; closeWhenReady(); }, 2400);
+      closeWhenReady();
       return { ok: true };
     } catch (error) {
       if (logHandle) { await logHandle.write(`Ошибка: ${error.stack || error.message}\n`).catch(() => {}); await logHandle.close().catch(() => {}); }

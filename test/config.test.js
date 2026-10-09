@@ -12,3 +12,11 @@ test('rejects invalid player names, memory, versions and relative paths', () => 
     assert.throws(() => validateSettings(input, defaults));
   }
 });
+test('migrates old nicknames and persists up to 15 distinct local profiles', () => {
+  assert.deepEqual(validateSettings({ nickname: 'Existing' }, defaults).profiles, ['Existing']);
+  const profiles = Array.from({ length: 15 }, (_, i) => `Player_${i}`);
+  const saved = validateSettings({ profiles, nickname: profiles[14] }, defaults);
+  assert.deepEqual(validateSettings(JSON.parse(JSON.stringify(saved)), defaults), saved);
+  for (const invalid of [[], [...profiles, 'Extra'], ['Player', 'player'], ['Player', '../bad']]) assert.throws(() => validateSettings({ profiles: invalid }, defaults));
+  assert.throws(() => validateSettings({ profiles: ['Other'], nickname: 'Player' }, defaults));
+});

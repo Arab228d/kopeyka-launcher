@@ -1,0 +1,32 @@
+/* Very faint square changes in the opacity of the glass. */
+.sidebar { background: #18202b12; backdrop-filter: blur(16px) saturate(.75); }
+.sidebar::before { background: #dbe2e824; backdrop-filter: none; }
+.profile { width: 100%; text-align: left; cursor: pointer; }
+.profile:hover { border-color: #e6cc88; background: #27344988; }
+.world-menu { height: var(--content-height); min-height: var(--content-height); justify-content: flex-start; padding-bottom: 28px; }
+.world-spacer { flex: 1; min-height: 80px; height: auto; margin: 0; }
+.play-panel { width: min(680px, 100%); padding: 12px 0 0; flex-shrink: 0; }
+.launch-actions { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 16px; align-items: center; }
+.launch-actions .launch-glow { width: 100%; margin: 0; }
+.launch-actions .launch-button { width: 100%; min-width: 0; }
+.launch-side { height: 52px; padding: 0 7px; font: 9px/1.4 PlayPixel, monospace; color: #f4f7fb; background: #24324588; border: 2px solid #d1dfef88; box-shadow: inset 0 2px #ffffff22, 0 3px #0e172a66; backdrop-filter: blur(8px); clip-path: polygon(4px 0,calc(100% - 4px) 0,calc(100% - 4px) 4px,100% 4px,100% calc(100% - 4px),calc(100% - 4px) calc(100% - 4px),calc(100% - 4px) 100%,4px 100%,4px calc(100% - 4px),0 calc(100% - 4px),0 4px,4px 4px); }
+.launch-side:hover { background: #52677caa; border-color: #f2daa1; }
+.play-fields { display: block; width: min(320px, 70%); margin: 20px auto 0; }
+.play-fields label { display: block; text-align: center; }
+.play-fields select { text-align: center; padding-left: 8px; padding-right: 28px; }
+.mods-profile { gap: 28px; }
+#profiles-dialog { width: min(570px, 90vw); max-height: 80vh; overflow: auto; color: #eef2f8; background: #17212aee; border: 2px solid #aab7c977; padding: 24px; box-shadow: 0 20px 80px #0008; }
+#profiles-dialog::backdrop { background: #07101c80; backdrop-filter: blur(8px); }
+.profiles-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.profiles-heading h2 { font: 16px/1.5 PlayPixel, monospace; margin: 0; }
+.profiles-hint { color: #aebccd; font-size: 12px; }
+#profiles-list { display: grid; gap: 8px; max-height: 36vh; overflow-y: auto; margin: 20px 0; }
+.profile-row { display: flex; gap: 8px; align-items: center; padding: 8px; border: 1px solid #ffffff22; background: #ffffff06; }
+.profile-choice { flex: 1; min-width: 0; overflow-wrap: anywhere; border: 0; background: none; color: white; text-align: left; padding: 8px; }
+.profile-choice:disabled { color: #f4d482; opacity: 1; cursor: default; }
+#profiles-dialog .secondary-button { font: 12px 'Segoe UI', sans-serif; padding: 8px; }
+#profiles-form label { font-size: 12px; }
+.profiles-actions { display: flex; gap: 8px; margin-top: 12px; }
+#profiles-status { min-height: 18px; font-size: 12px; color: #efcf8b; }
+@media (max-width: 1100px) { .launch-actions { gap: 10px; } .launch-side { font-size: 8px; } .launch-actions .launch-button { font-size: 18px; gap: 12px; } }
+@media (max-height: 796px) { .world-menu { padding-bottom: 20px; } }

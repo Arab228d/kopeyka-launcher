@@ -51,8 +51,18 @@ async function findJava(root) {
   }
   return null;
 }
-async function ensureJava(major, runtimeRoot, send) {
+async function ensureJava(major, runtimeRoot, send, bundledRoot) {
   if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Эта сборка пока поддерживает Windows x64.');
+  if (bundledRoot) {
+    try {
+      const bundled = await findJava(path.join(bundledRoot, `java-${major}`));
+      if (bundled) {
+        await promisify(execFile)(bundled, ['-version'], { windowsHide: true, timeout: 20000 });
+        send({ kind: 'log', message: `Используется Java ${major} из установщика.` });
+        return bundled;
+      }
+    } catch { /* A damaged or missing bundled runtime falls back to verified download. */ }
+  }
   const root = path.join(runtimeRoot, `java-${major}`);
   await fs.mkdir(root, { recursive: true });
   let executable = await findJava(root);

@@ -1,0 +1,37 @@
+:root { --ui-ease: cubic-bezier(.2,.75,.25,1); }
+/* Only opacity and movement animate on page entry; blur stays constant. */
+.page:not(#home):not([hidden]) { animation: page-arrive 240ms var(--ui-ease); }
+#home:not([hidden]) .world-menu { animation: home-arrive 280ms ease-out; }
+body.launch-transition #home .world-menu { animation: none; }
+.nav-button, .launch-side, .profile, .secondary-button, .profile-choice {
+  transition: transform 180ms var(--ui-ease), border-color 180ms ease, color 180ms ease, background-color 180ms ease, opacity 180ms ease;
+}
+.nav-button:hover:not(:disabled), .launch-side:hover:not(:disabled), .profile:hover:not(:disabled), .secondary-button:hover:not(:disabled) { transform: translateY(-2px); }
+.nav-button:active:not(:disabled), .launch-side:active:not(:disabled), .profile:active:not(:disabled), .secondary-button:active:not(:disabled) { transform: translateY(1px); transition-duration: 70ms; }
+.launch-actions .launch-button { transition: transform 180ms var(--ui-ease), opacity 180ms ease; }
+.launch-actions .launch-button:hover:not(:disabled) { transform: translateY(-2px) scale(1.015); }
+.launch-actions .launch-button:active:not(:disabled) { transform: translateY(1px) scale(.985); transition-duration: 80ms; }
+.field-shell { transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+.profile-marker { transition: transform 200ms var(--ui-ease); }
+.profile:hover .profile-marker { transform: translateY(2px); }
+.profile-row { animation: row-arrive 180ms var(--ui-ease); }
+.profile-choice:hover:not(:disabled) { color: #ffe3a0; background-color: #ffffff08; }
+#profiles-dialog {
+  opacity: 0; transform: translateY(10px) scale(.975);
+  transition: opacity 200ms ease, transform 240ms var(--ui-ease), display 240ms allow-discrete, overlay 240ms allow-discrete;
+}
+#profiles-dialog[open] { opacity: 1; transform: translateY(0) scale(1); }
+#profiles-dialog::backdrop { opacity: 0; transition: opacity 200ms ease, display 240ms allow-discrete, overlay 240ms allow-discrete; }
+#profiles-dialog[open]::backdrop { opacity: 1; }
+@starting-style {
+  #profiles-dialog[open] { opacity: 0; transform: translateY(10px) scale(.975); }
+  #profiles-dialog[open]::backdrop { opacity: 0; }
+}
+@keyframes page-arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes home-arrive { from { opacity: 0; } to { opacity: 1; } }
+@keyframes row-arrive { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .page:not(#home):not([hidden]), #home:not([hidden]) .world-menu, .profile-row { animation: none; }
+  .nav-button, .launch-side, .profile, .secondary-button, .profile-choice, .launch-actions .launch-button, .field-shell, .profile-marker, #profiles-dialog, #profiles-dialog::backdrop { transition: none; }
+  .nav-button:hover, .nav-button:active, .launch-side:hover, .launch-side:active, .profile:hover, .profile:active, .secondary-button:hover, .secondary-button:active, .launch-actions .launch-button:hover, .launch-actions .launch-button:active, .profile:hover .profile-marker { transform: none; }
+}
