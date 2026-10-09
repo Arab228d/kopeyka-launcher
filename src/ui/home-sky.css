@@ -1,0 +1,35 @@
+/* The home scene gets its own sky; other pages keep their graphite palette. */
+#home { isolation: isolate; }
+#home::before, #home::after { content: ''; position: absolute; inset: 0 -32px; pointer-events: none; }
+#home::before {
+  z-index: -2;
+  background: radial-gradient(ellipse at 50% 28%, #fff5ce80, transparent 46%),
+    linear-gradient(180deg, #5184b6 0%, #84b5cd 35%, #a5cbd5 62%, #526f83 80%, #263440 95%, #202124 100%);
+}
+#home::after { z-index: -1; background: url('assets/sky-clouds.svg') center 24% / 1400px auto no-repeat; opacity: .8; }
+.world-menu::before { display: none; }
+.world-heading { filter: drop-shadow(0 8px 14px #1b385b38); }
+.minecraft-logo {
+  filter: brightness(1.16) contrast(1.07) drop-shadow(0 2px 0 #e6e4d5) drop-shadow(0 5px 0 #20364c) drop-shadow(0 9px 5px #25476655);
+  transform: perspective(800px) rotateX(6deg);
+}
+.java-logo { filter: brightness(1.2) drop-shadow(0 3px 0 #23394c) drop-shadow(0 4px 4px #203a5255); }
+.play-panel { padding: 0 0 12px; }
+.play-fields label { color: #f2f3ef; text-shadow: 0 2px 3px #162d45; }
+.profile-loader { color: #e1e9ed; text-shadow: 0 2px 3px #152a3d; }
+.status-row { color: #e5edf3; text-shadow: 0 1px 2px #172b3e; }
+.status-row.error { color: #ffd0bb; }
+@media(max-width:1100px) { #home::before, #home::after { left: -24px; right: -24px; } }
+#launch-overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; mix-blend-mode: screen; animation: launch-fade .65s both; pointer-events: none; }
+body.launch-transition::after { content: ''; position: fixed; inset: 0; z-index: 40; background: linear-gradient(#10213255, #102132bb); pointer-events: none; animation: launch-fade .65s both; }
+.launch-branding { width: min(440px, 80vw); text-align: center; }
+.launch-branding img { width: 100%; mix-blend-mode: screen; }
+.launch-branding p { font: 14px/1.8 PlayPixel, monospace; color: #fff4cc; margin: 22px 0 20px; text-shadow: 3px 3px #172231; }
+.loading-track { margin: auto; width: 190px; height: 6px; background: #17263899; overflow: hidden; }
+.loading-track i { display: block; width: 55px; height: 100%; background: #efc66a; animation: launch-loading 1.2s ease-in-out infinite alternate; }
+body.launch-transition .play-panel, body.launch-transition .world-heading { opacity: 0; transition: opacity .4s; pointer-events: none; }
+body.launch-transition .sidebar { opacity: .2; transition: opacity .5s; pointer-events: none; }
+body.launch-transition .world-stage { position: fixed; inset: 0; width: 100vw; height: 100vh; margin: 0; z-index: 10; }
+@keyframes launch-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes launch-loading { from { transform: translateX(0); } to { transform: translateX(135px); } }
+@media(prefers-reduced-motion:reduce) { #launch-overlay { animation: none; } .loading-track i { animation: none; width: 100%; } }

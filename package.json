@@ -1,0 +1,57 @@
+{
+  "name": "kopeyka-launcher",
+  "version": "0.1.11",
+  "description": "KOPEYKA Laucher — Minecraft Java launcher for Windows",
+  "main": "src/main.js",
+  "author": "KOPEYKA",
+  "private": true,
+  "scripts": {
+    "start": "npm run build:scene && electron .",
+    "build:scene": "esbuild src/scene/scene.js --bundle --minify --format=iife --outfile=src/ui/scene.bundle.js",
+    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js",
+    "test:ui": "npm run build:scene && electron test/ui-smoke.cjs",
+    "build": "npm run build:scene && electron-builder --win portable --x64",
+    "build:installer": "npm run build:scene && electron-builder --win nsis --x64"
+  },
+  "dependencies": {
+    "adm-zip": "0.5.16",
+    "minecraft-launcher-core": "3.18.2"
+  },
+  "devDependencies": {
+    "electron": "44.7.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "^0.28.2",
+    "three": "^0.186.1"
+  },
+  "build": {
+    "appId": "ru.kopeyka.launcher",
+    "productName": "KOPEYKA Laucher",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "artifactName": "KOPEYKA-Laucher-Setup-${version}.exe",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "KOPEYKA Laucher",
+      "deleteAppDataOnUninstall": false,
+      "installerLanguages": [
+        "ru_RU"
+      ]
+    },
+    "portable": {
+      "artifactName": "KOPEYKA-Laucher-${version}.exe"
+    }
+  }
+}

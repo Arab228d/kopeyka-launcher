@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://cdn.modrinth.com; connect-src 'none'">
+  <title>KOPEYKA Laucher</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="play-button.css">
+  <link rel="stylesheet" href="world-menu.css">
+  <link rel="stylesheet" href="mods.css">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="home-sky.css">
+  <link rel="stylesheet" href="pixel-gui.css">
+  <link rel="stylesheet" href="titlebar.css">
+</head>
+<body>
+  <header class="titlebar" aria-label="Панель окна">
+    <div class="window-title"><span class="title-coin" aria-hidden="true"></span><span>KOPEYKA Laucher</span></div>
+    <div class="window-controls">
+      <button id="window-minimize" class="window-button" aria-label="Свернуть" title="Свернуть"><span class="window-symbol minimize-symbol" aria-hidden="true"></span></button>
+      <button id="window-maximize" class="window-button" aria-label="Развернуть" title="Развернуть"><span class="window-symbol maximize-symbol" aria-hidden="true"></span></button>
+      <button id="window-close" class="window-button close-button" aria-label="Закрыть" title="Закрыть"><span class="window-symbol close-symbol" aria-hidden="true"></span></button>
+    </div>
+  </header>
+  <div class="app-shell">
+  <aside class="sidebar">
+    <a class="brand" href="#" aria-label="KOPEYKA Laucher — главная"><img id="brand-name" src="assets/kopeyka-logo.png" alt="Копейка" data-source="custom"><small>LAUCHER</small></a>
+    <nav>
+      <button class="nav-button active" data-page="home"><span class="nav-icon">▦</span>Minecraft Java<span class="nav-dot"></span></button>
+      <button class="nav-button" data-page="mods"><span class="nav-icon">◈</span>Mods</button>
+      <button class="nav-button" data-page="settings"><span class="nav-icon">⚙</span>Настройки</button>
+      <button class="nav-button" data-page="logs"><span class="nav-icon">≡</span>Журнал запуска</button>
+      <button class="nav-button" id="card-folder"><span class="nav-icon">▣</span>Папка игры</button>
+    </nav>
+    <div class="sidebar-bottom"><div class="profile"><div class="avatar"><i></i></div><div><strong id="profile-name">Player</strong></div><span class="profile-marker">◆</span></div></div>
+  </aside>
+  <main>
+    <section id="home" class="page">
+      <div class="world-menu">
+        <div class="world-heading"><img id="minecraft-logo" class="minecraft-logo" src="assets/minecraft-logo.png" alt="Minecraft" data-source="minecraft-bundled"><img id="java-logo" class="java-logo" src="assets/java-edition.png" alt="Java Edition" data-source="minecraft-bundled"></div>
+        <div class="world-stage" id="world-stage"><canvas id="world-canvas" role="img" aria-label="Вращающийся трёхмерный остров с травой, деревьями, цветами и персонажем"></canvas><div class="scene-fallback" id="scene-fallback" hidden>Не удалось показать остров.<br>Попробуй перезапустить лаунчер.</div></div>
+        <div class="play-panel">
+          <div class="launch-glow"><button id="play" class="launch-button" disabled><span class="pixel-arrow" aria-hidden="true"></span><span id="play-text">Играть</span></button></div>
+          <div class="play-fields"><label>ВЕРСИЯ ИГРЫ<span class="field-shell version-shell"><select id="version" aria-label="Версия игры"><option value="1.21.1">Загрузка версий…</option></select><span class="field-arrow" aria-hidden="true"></span></span></label><label>ТВОЙ НИК<span class="field-shell"><input id="nickname" maxlength="16" spellcheck="false" value="Player" autocomplete="off"></span></label></div>
+          <button id="profile-loader" class="profile-loader" data-page="mods">Vanilla ▾</button>
+          <div class="status-row" hidden><span id="status" role="status" aria-live="polite"></span><span id="percent"></span></div><progress id="progress" max="100" value="0" hidden></progress>
+        </div>
+      </div>
+    </section>
+    <section id="settings" class="page" hidden><div class="page-intro"><h2>Настройки</h2></div><div class="settings-card"><label class="setting-row"><span><strong>Память Minecraft</strong><small id="memory-hint">Оставь немного памяти для Windows.</small></span><select id="memory"><option value="2">2 ГБ</option><option value="3">3 ГБ</option><option value="4">4 ГБ</option><option value="6">6 ГБ</option><option value="8">8 ГБ</option><option value="12">12 ГБ</option><option value="16">16 ГБ</option></select></label><label class="setting-row"><span><strong>Экспериментальные версии</strong><small>Snapshots, pre-release и release candidate.</small></span><input id="snapshots" type="checkbox"></label><label class="setting-row"><span><strong>Исторические версии</strong><small>Показывать старые Alpha, Beta и ранние сборки.</small></span><input id="historical" type="checkbox"></label><div class="setting-row folder-row"><span><strong>Папка игры</strong><small id="game-path"></small></span><button class="secondary-button" id="choose-folder">Выбрать</button></div><div class="setting-row"><span><strong>Java</strong><small>Нужная версия скачивается автоматически при запуске.</small></span><span class="auto-label">АВТО</span></div></div><button class="pixel-button save-button" id="save">СОХРАНИТЬ</button><p id="settings-status" role="status" aria-live="polite"></p></section>
+    <section id="mods" class="page" hidden>
+      <div class="mods-heading"><h2>Mods</h2><div class="mods-branding"><img id="mods-minecraft-logo" src="assets/minecraft-logo.png" alt="Minecraft" data-source="minecraft-bundled"><img id="mods-java-logo" src="assets/java-edition.png" alt="Java Edition" data-source="minecraft-bundled"></div><button id="mods-import" class="secondary-button">+ Выбрать .jar</button></div>
+      <div class="mods-profile"><label>ВЕРСИЯ<span id="mods-version"></span></label><label>ЗАГРУЗЧИК<select id="loader"><option value="vanilla">Vanilla</option><option value="forge">Forge</option><option value="fabric">Fabric</option><option value="optifine">OptiFine</option></select></label><span id="loader-note">Загрузчик устанавливается при запуске игры.</span></div>
+      <div id="optifine-panel" class="optifine-panel" hidden><p>Скачай OptiFine для выбранной версии и выбери его JAR. Лаунчер установит отдельную сборку при запуске.</p><button id="optifine-site" class="secondary-button">Сайт OptiFine ↗</button><button id="optifine-import" class="secondary-button">Выбрать OptiFine .jar</button><span id="optifine-status" role="status"></span></div>
+      <div id="mods-installed" class="mods-scroll"><p class="mods-hint">Выбери скачанные .jar для своей версии игры и загрузчика.</p><div id="mods-installed-list" class="mods-results installed-grid"></div></div>
+      <div class="mods-footer"><div class="mods-footer-info"><strong id="mods-selection">Установленные моды</strong><p id="mods-status" role="status" aria-live="polite"></p><progress id="mods-progress" max="100" hidden></progress></div></div>
+    </section>
+    <section id="logs" class="page" hidden><div class="page-intro"><h2>Журнал запуска</h2></div><div class="log-toolbar"><span>ТЕКУЩАЯ СЕССИЯ</span><div><button class="secondary-button" id="export-log">Сохранить журнал</button> <button class="secondary-button" id="clear-log">Очистить экран</button></div></div><pre id="log" role="log"></pre></section>
+  </main>
+  </div>
+  <div id="launch-overlay" hidden role="status" aria-live="polite"><div class="launch-branding"><img src="assets/kopeyka-logo.png" alt="Копейка"><p>Загрузка игры<span class="loading-dots" aria-hidden="true">…</span></p><div class="loading-track"><i></i></div></div></div>
+  <script src="renderer.js"></script>
+  <script src="titlebar.js"></script>
+  <script src="scene.bundle.js"></script>
+</body>
+</html>

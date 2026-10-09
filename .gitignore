@@ -1,0 +1,11 @@
+node_modules/
+dist/
+*.log
+artifacts/
+integration-result.json
+.env
+.env.*
+!.env.example
+settings.json
+mods-index.json
+preview.png

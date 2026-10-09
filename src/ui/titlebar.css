@@ -1,0 +1,34 @@
+:root { --titlebar-height: 36px; --content-height: calc(100vh - var(--titlebar-height)); }
+body { display: block; }
+.titlebar { position: sticky; top: 0; z-index: 100; height: var(--titlebar-height); padding: 0 5px 0 13px; background: #30343c; border-top: 2px solid #69717d; border-bottom: 3px solid #12151b; box-shadow: inset 0 -2px #454d59; user-select: none; -webkit-app-region: drag; }
+.window-title { display: flex; align-items: center; gap: 10px; color: #e7d9ac; font: 8px/1.5 PlayPixel, monospace; text-shadow: 2px 2px #14171d; pointer-events: none; }
+.title-coin { display: block; width: 18px; height: 18px; background: #e4c76e; border: 3px solid #967638; box-shadow: inset 2px 2px #fff1b0, inset -2px -2px #b59446, 2px 2px #15171c; clip-path: polygon(3px 0,15px 0,15px 3px,18px 3px,18px 15px,15px 15px,15px 18px,3px 18px,3px 15px,0 15px,0 3px,3px 3px); }
+.window-controls { display: flex; gap: 4px; -webkit-app-region: no-drag; }
+.window-button { display: grid; place-items: center; width: 42px; height: 26px; padding: 0; border: 2px solid #13161b; background: #424852; color: #d8dee7; box-shadow: inset 2px 2px #747e8c, inset -2px -2px #272d35; -webkit-app-region: no-drag; }
+.window-button:hover { background: #5b6573; color: #fff0bc; }
+.window-button:active { background: #323943; box-shadow: inset 2px 2px #242a32; }
+.window-button:focus-visible { outline: 2px solid #edce7c; outline-offset: 0; }
+.close-button:hover { background: #a84440; color: #fff2de; box-shadow: inset 2px 2px #db8173, inset -2px -2px #6d2b2b; }
+.window-symbol { display: block; width: 12px; height: 12px; }
+.minimize-symbol { height: 3px; margin-top: 7px; background: currentColor; }
+.maximize-symbol { border: 2px solid currentColor; border-top-width: 3px; }
+.is-maximized .maximize-symbol { width: 10px; height: 10px; margin-top: 3px; margin-right: 3px; box-shadow: 3px -3px #424852, 3px -3px 0 2px currentColor; }
+.close-symbol { width: 3px; height: 3px; margin-right: 9px; margin-bottom: 9px; background: currentColor; box-shadow: 9px 0 currentColor, 3px 3px currentColor, 6px 3px currentColor, 3px 6px currentColor, 6px 6px currentColor, 0 9px currentColor, 9px 9px currentColor; }
+.app-shell { display: flex; min-height: var(--content-height); }
+.sidebar { top: var(--titlebar-height); height: var(--content-height); }
+.world-menu { min-height: var(--content-height); }
+.world-stage { height: clamp(220px, calc(var(--content-height) - 450px), 660px); }
+#mods { height: var(--content-height); }
+#log { height: calc(var(--content-height) - 235px); }
+#launch-overlay, body.launch-transition::after { inset: var(--titlebar-height) 0 0; }
+body.launch-transition .world-stage { inset: var(--titlebar-height) 0 0; height: var(--content-height); }
+@media (max-height: 796px) {
+  .world-menu { padding: 14px 0; }
+  .world-stage { height: clamp(190px, calc(var(--content-height) - 414px), 350px); margin-bottom: 8px; }
+  .world-heading { min-height: 86px; }
+  .minecraft-logo { width: 360px; }
+  .java-logo { width: 155px; }
+  .launch-button { height: 58px; }
+  .play-panel { padding-top: 14px; padding-bottom: 9px; }
+  .play-panel > .launch-glow { margin-bottom: 13px; }
+}

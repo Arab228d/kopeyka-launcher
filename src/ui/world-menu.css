@@ -1,0 +1,84 @@
+main {
+  max-width: none;
+  background: radial-gradient(ellipse at 50% 38%, #21342188, transparent 60%), #141913;
+}
+.sidebar nav { margin-top: 46px; }
+.brand { gap: 10px; }
+.brand small { margin-top: 6px; }
+#brand-name { display: block; height: 24px; width: auto; max-width: 132px; image-rendering: pixelated; filter: drop-shadow(2px 2px 0 #040804); }
+#brand-fallback { font-family: PlayPixel, monospace; font-size: 17px; }
+#home { position: relative; }
+.world-menu {
+  position: relative; min-height: 100vh; padding: 30px 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.world-menu::before {
+  content: ''; position: absolute; inset: 70px 0 210px; opacity: .12; pointer-events: none;
+  background: linear-gradient(#8ba87918 1px, transparent 1px), linear-gradient(90deg, #8ba87918 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 73%);
+}
+.world-heading { position: relative; width: 100%; min-height: 104px; text-align: center; z-index: 1; pointer-events: none; padding: 0; transform: translateY(18px); }
+.minecraft-logo { display: block; width: 420px; max-width: 80%; height: auto; margin: 0 auto; }
+.java-logo { display: block; width: 180px; height: auto; margin: 9px auto 0; }
+.world-stage { position: relative; width: 100%; height: clamp(240px, calc(100vh - 410px), 700px); margin: 0 0 13px; flex-shrink: 0; }
+#world-canvas { display: block; width: 100%; height: 100%; cursor: default; outline: none; pointer-events: none; }
+.scene-fallback { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; line-height: 2; color: #b0c49d; }
+.play-panel { position: relative; width: 490px; max-width: 90%; margin: 0 auto; padding: 0; background: none; border: 0; }
+.play-panel > .launch-glow { width: 280px; margin: 0 auto 26px; align-self: auto; }
+.launch-button { height: 64px; font-size: 22px; }
+.play-fields { grid-template-columns: 1fr 1fr; gap: 18px; }
+.play-fields label { color: #a6bf90; font: 8px/1.5 PlayPixel, monospace; letter-spacing: .3px; }
+.field-shell {
+  --frame-shape: polygon(6px 0, calc(100% - 6px) 0, calc(100% - 6px) 3px, calc(100% - 3px) 3px, calc(100% - 3px) 6px, 100% 6px, 100% calc(100% - 6px), calc(100% - 3px) calc(100% - 6px), calc(100% - 3px) calc(100% - 3px), calc(100% - 6px) calc(100% - 3px), calc(100% - 6px) 100%, 6px 100%, 6px calc(100% - 3px), 3px calc(100% - 3px), 3px calc(100% - 6px), 0 calc(100% - 6px), 0 6px, 3px 6px, 3px 3px, 6px 3px);
+  display: block; position: relative; isolation: isolate; margin-top: 11px;
+  padding: 3px; clip-path: var(--frame-shape); background: #6b8b4e;
+  box-shadow: inset 0 3px 0 #98b67c, inset 0 -3px 0 #304423;
+  transition: background .12s;
+}
+.field-shell::before {
+  content: ''; position: absolute; inset: 3px; z-index: -1;
+  clip-path: var(--frame-shape); background: #162410;
+  box-shadow: inset 0 3px 0 #0b1308, inset 0 -3px 0 #28371e;
+}
+.play-fields select, .play-fields input {
+  display: block; height: 45px; width: 100%; border: 0; margin: 0;
+  background: transparent; padding: 0 13px; color: #e2f0d5;
+  font: 10px/1.6 PlayPixel, monospace; letter-spacing: 0; border-radius: 0;
+  text-shadow: 2px 2px 0 #070e05; caret-color: #a0f06a;
+}
+.play-fields select { appearance: none; padding-right: 33px; }
+.play-fields select option { background: #182610; color: #e2f0d5; }
+.field-arrow {
+  position: absolute; right: 16px; top: 23px; width: 12px; height: 9px;
+  pointer-events: none; background: #b2d296;
+  clip-path: polygon(0 0, 100% 0, 100% 3px, 75% 3px, 75% 6px, 50% 6px, 50% 9px, 25% 9px, 25% 6px, 0 6px);
+}
+.field-shell:hover { background: #a1cb76; }
+.field-shell:focus-within { background: #9ded62; box-shadow: inset 0 3px 0 #ceffa5, inset 0 -3px 0 #578b33; }
+.field-shell input:focus-visible, .field-shell select:focus-visible { outline: 0; }
+.field-shell:has(:disabled) { opacity: .6; }
+.nav-button {
+  --nav-shape: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px), 0 4px, 4px 4px);
+  border: 0; position: relative; isolation: isolate; clip-path: var(--nav-shape);
+  font: 8px/1.6 PlayPixel, monospace; padding: 17px 10px; gap: 10px;
+}
+.nav-icon { font: 19px/1 'Segoe UI', sans-serif; width: 19px; flex-shrink: 0; }
+.nav-button.active { background: #749d4e; color: #d6f2c0; }
+.nav-button.active::before {
+  content: ''; position: absolute; inset: 2px; clip-path: var(--nav-shape);
+  background: #263b1d; z-index: -1;
+}
+.nav-button:hover:not(.active) { background: #23321b; }
+.status-row { margin-top: 15px; font-size: 10px; justify-content: center; color: #9db08c; text-align: center; line-height: 1.5; min-height: 18px; }
+.page-intro { padding-top: 35px; }
+@media (max-height: 760px) {
+  .world-menu { padding: 20px 0; }
+  .world-heading { min-height: 86px; }
+  .minecraft-logo { width: 360px; }
+  .java-logo { width: 155px; margin-top: 8px; }
+  .world-stage { height: clamp(200px, calc(100vh - 400px), 350px); margin-bottom: 10px; }
+  .launch-button { height: 58px; }
+  .play-panel > .launch-glow { margin-bottom: 20px; }
+}
+@media (max-width: 1100px) { .play-panel { width: 460px; } }

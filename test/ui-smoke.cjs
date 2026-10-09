@@ -1,0 +1,124 @@
+// Electron UI smoke check; never downloads or launches Minecraft.
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('node:path');
+const fs = require('node:fs/promises');
+const assert = require('node:assert/strict');
+const { loadMinecraftTextures } = require('../src/minecraft-textures');
+const output = path.join(__dirname, '..', 'artifacts');
+const isolatedData = path.join(app.getPath('temp'), `kopeyka-ui-check-${process.pid}`);
+require('node:fs').mkdirSync(isolatedData, { recursive: true });
+app.setPath('userData', isolatedData);
+app.setPath('sessionData', isolatedData);
+// Keep UI verification independent of the host's GPU driver and open apps.
+app.commandLine.appendSwitch('use-angle', 'swiftshader');
+app.commandLine.appendSwitch('enable-unsafe-swiftshader');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+app.whenReady().then(async () => {
+  try {
+    await fs.mkdir(output, { recursive: true });
+    ipcMain.handle('launcher:settings', () => ({ nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }));
+    ipcMain.handle('launcher:versions', () => ({ latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
+    ipcMain.handle('launcher:save', (_, input) => input);
+    let installedMods = [];
+    ipcMain.handle('launcher:mods-list', () => installedMods);
+    ipcMain.handle('launcher:mods-import', (_, input) => { assert.equal(input.loader, 'fabric'); installedMods = [{ file: 'local.jar', title: 'Local mod', enabled: true, icon: require('../src/ui/assets/island-textures.json').textures.dirt }]; return ['local.jar']; });
+    ipcMain.handle('launcher:mods-toggle', () => { installedMods[0].enabled = !installedMods[0].enabled; });
+    ipcMain.handle('launcher:textures', () => process.env.KOPEYKA_UI_NO_TEXTURES ? { source: 'fallback', textures: {} } : loadMinecraftTextures([path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft')], output, '1.21.1'));
+    const window = new BrowserWindow({ width: 1240, height: 820, frame: false, backgroundColor: '#141913', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, '..', 'src', 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, backgroundThrottling: false } });
+    require('../src/window-controls').registerWindowControls(window);
+    const errors = [];
+    window.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message); });
+    await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
+    await delay(2200);
+    async function read() {
+      return window.webContents.executeJavaScript(`(() => {
+        const canvas = document.getElementById('world-canvas');
+        const button = document.getElementById('play').getBoundingClientRect();
+        const stage = document.getElementById('world-stage').getBoundingClientRect();
+        return {ready:canvas.dataset.ready,textures:canvas.dataset.textures,textureVersion:canvas.dataset.textureVersion,frames:Number(canvas.dataset.frames),angle:Number(canvas.dataset.angle),buttonCenter:button.x+button.width/2,stageCenter:stage.x+stage.width/2,scrollHeight:document.documentElement.scrollHeight,height:innerHeight,width:innerWidth,logo:document.getElementById('minecraft-logo').dataset.source,logoWidth:document.getElementById('minecraft-logo').naturalWidth,brandFont:document.getElementById('brand-name').dataset.source,rotationControl:!!document.getElementById('toggle-rotation'),statusVisible:!document.getElementById('status').parentElement.hidden,fallback:!document.getElementById('scene-fallback').hidden,disabled:document.getElementById('play').disabled};
+      })()`);
+    }
+    let first = await read();
+    for (let attempt = 0; first.ready !== 'true' && attempt < 15; attempt++) { await delay(500); first = await read(); }
+    console.log('Initial scene:', JSON.stringify(first), JSON.stringify(errors));
+    await fs.writeFile(path.join(output, 'home-1240.png'), (await window.webContents.capturePage()).toPNG());
+    assert.equal(first.ready, 'true'); assert.equal(first.fallback, false); assert.equal(first.disabled, false);
+    assert.ok(Math.abs(first.buttonCenter - first.stageCenter) < 1, 'Play is centered below the scene');
+    await delay(1000); const second = await read(); console.log('Animation diagnostics:', JSON.stringify({ first, second })); assert.ok(second.angle > first.angle + .01, 'Island rotates over time');
+    assert.equal(first.rotationControl, false); assert.equal(first.statusVisible, false);
+    assert.equal(first.logo, 'minecraft'); assert.equal(first.textures, 'minecraft'); assert.ok(first.logoWidth > 500); assert.equal(first.brandFont, 'custom');
+    const homeText = await window.webContents.executeJavaScript("document.getElementById('home').innerText + document.querySelector('.sidebar').innerText");
+    assert.doesNotMatch(homeText, /OVERWORLD|Потяни|маленький большой|ПЕРВАЯ СБОРКА|Всё готово|ТЫСЯЧА ВОЗМОЖНОСТЕЙ|НЕОФИЦИАЛЬНЫЙ|ТВОИ ПРИКЛЮЧЕНИЯ/i);
+    assert.ok(second.scrollHeight <= second.height + 1, 'Default window fits without scrolling');
+    await window.webContents.executeJavaScript("document.querySelector('[data-page=settings]').click()");
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('settings').hidden"), false);
+    await window.webContents.executeJavaScript("document.querySelector('[data-page=home]').click()");
+    window.setSize(1020, 720);
+    let small = await read();
+    for (let attempt = 0; small.width === first.width && attempt < 20; attempt++) { await delay(250); small = await read(); }
+    assert.ok(small.width < first.width, 'Window actually resized');
+    const resizeFrame = small.frames;
+    for (let attempt = 0; small.frames <= resizeFrame && attempt < 20; attempt++) { await delay(250); small = await read(); }
+    assert.ok(small.frames > resizeFrame, 'Scene renders after resizing');
+    assert.ok(Math.abs(small.buttonCenter - small.stageCenter) < 1, 'Centered at minimum window size');
+    assert.ok(small.scrollHeight <= small.height + 1, 'Minimum window fits without scrolling');
+    await fs.writeFile(path.join(output, 'home-1020.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.querySelector('[data-page=mods]').click(); document.getElementById('loader').value='fabric'; document.getElementById('loader').dispatchEvent(new Event('change'))");
+    await delay(600);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('mods-minecraft-logo').naturalWidth > 500 && !document.getElementById('mods-minecraft-logo').hidden && !document.getElementById('mods-hero-art')"), true);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('mods-catalog') === null && document.getElementById('mods-install') === null"), true, 'Catalog is removed');
+    await window.webContents.executeJavaScript("document.getElementById('mods-import').click()"); await delay(600);
+    assert.equal(installedMods.length, 1);
+    assert.ok(await window.webContents.executeJavaScript("[...document.querySelectorAll('#mods-installed-list .mod-cover')].some(i=>i.complete && i.naturalWidth>0)"), 'Local mod icon loads');
+    window.show(); window.focus(); await delay(600);
+    await fs.writeFile(path.join(output, 'mods-local.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.querySelector('#mods-installed-list button').click()"); await delay(250);
+    assert.equal(installedMods[0].enabled, false);
+    await window.webContents.executeJavaScript("document.querySelector('[data-page=settings]').click(); document.getElementById('historical').checked=true; document.getElementById('historical').dispatchEvent(new Event('change')); document.getElementById('snapshots').checked=true; document.getElementById('snapshots').dispatchEvent(new Event('change'))");
+    assert.equal(await window.webContents.executeJavaScript("document.querySelector('#version option[value=\"b1.7.3\"]') !== null && document.querySelector('#version option[value=\"1.21-pre1\"]') !== null"), true);
+    await delay(150);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('save').getBoundingClientRect().bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth"), true, 'Settings fit the minimum window');
+    await fs.writeFile(path.join(output, 'settings-pixel.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.querySelector('[data-page=logs]').click()");
+    await delay(150);
+    await fs.writeFile(path.join(output, 'logs-pixel.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.querySelector('[data-page=home]').click()");
+    window.setSize(1480, 1120); await delay(1200);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('play').getBoundingClientRect().bottom <= innerHeight"), true, 'Play remains visible with enlarged island');
+    await fs.writeFile(path.join(output, 'home-large-bare-bones.png'), (await window.webContents.capturePage()).toPNG());
+    const angle = await window.webContents.executeJavaScript("document.getElementById('world-canvas').dataset.angle");
+    window.webContents.send('launcher:event', { kind: 'state', state: 'preparing', message: 'Проверка файлов' });
+    await delay(400);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('world-canvas').dataset.angle"), angle, 'Island stops while preparing');
+    window.webContents.send('launcher:event', { kind: 'state', state: 'launching' });
+    await delay(1800);
+    const transition = await window.webContents.executeJavaScript("({zoom:Number(document.getElementById('world-canvas').dataset.zoom),angle:document.getElementById('world-canvas').dataset.angle,visible:!document.getElementById('launch-overlay').hidden,text:document.getElementById('launch-overlay').innerText})");
+    assert.ok(transition.zoom > 2.5); assert.equal(transition.angle, angle); assert.equal(transition.visible, true); assert.match(transition.text, /Загрузка игры/);
+    await fs.writeFile(path.join(output, 'launch-transition.png'), (await window.webContents.capturePage()).toPNG());
+    window.webContents.send('launcher:event', { kind: 'error', message: 'Проверка восстановления после ошибки' });
+    await delay(400);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('launch-overlay').hidden && Number(document.getElementById('world-canvas').dataset.zoom) === 1"), true, 'Failure restores menu');
+    await window.webContents.executeJavaScript("document.getElementById('window-maximize').click()");
+    for (let attempt = 0; !window.isMaximized() && attempt < 20; attempt++) await delay(100);
+    assert.equal(window.isMaximized(), true, 'Custom titlebar maximizes the real window');
+    await delay(200);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('window-maximize').getAttribute('aria-label')"), 'Восстановить размер');
+    await window.webContents.executeJavaScript("document.getElementById('window-maximize').click()");
+    for (let attempt = 0; window.isMaximized() && attempt < 20; attempt++) await delay(100);
+    assert.equal(window.isMaximized(), false, 'Custom titlebar restores the window');
+    await window.webContents.executeJavaScript("document.getElementById('window-minimize').click()");
+    for (let attempt = 0; !window.isMinimized() && attempt < 20; attempt++) await delay(100);
+    assert.equal(window.isMinimized(), true, 'Custom titlebar minimizes the window');
+    window.restore();
+    assert.equal(errors.length, 0, `Renderer errors: ${errors.join('; ')}`);
+    const result = { ok: true, defaultWindow: first, minimumWindow: small, animation: { from: first.angle, to: second.angle }, automaticRotation: true, branding: true, rendererErrors: errors };
+    await fs.writeFile(path.join(output, 'ui-result.json'), JSON.stringify(result, null, 2));
+    console.log(JSON.stringify(result));
+    await window.webContents.executeJavaScript("document.getElementById('window-close').click()");
+    for (let attempt = 0; !window.isDestroyed() && attempt < 20; attempt++) await delay(100);
+    assert.equal(window.isDestroyed(), true, 'Custom titlebar closes the window');
+    app.exit(0);
+  } catch (error) { console.error(error); app.exit(1); }
+});
