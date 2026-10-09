@@ -20,8 +20,10 @@
   <link rel="stylesheet" href="launcher-controls.css">
   <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="pixel-surfaces.css">
+  <link rel="stylesheet" href="startup.css">
 </head>
-<body>
+<body class="booting">
+  <div id="startup-overlay" role="status" aria-label="Загрузка лаунчера"><img class="startup-logo" src="assets/startup-logo.png" alt="KOPEYKA"></div>
   <header class="titlebar" aria-label="Панель окна">
     <div class="window-title"><span class="title-coin" aria-hidden="true"></span><span class="title-product"><b>KOPEYKA</b> Launcher</span></div>
     <div class="window-controls">
@@ -30,7 +32,7 @@
       <button id="window-close" class="window-button close-button" aria-label="Закрыть" title="Закрыть"><span class="window-symbol close-symbol" aria-hidden="true"></span></button>
     </div>
   </header>
-  <div class="app-shell">
+  <div class="app-shell" inert>
   <div class="shell-backdrop" aria-hidden="true"><img id="shell-art" src="assets/home-artwork.png" alt="" draggable="false"></div>
   <aside class="sidebar">
     <nav>
@@ -76,6 +78,7 @@
     <form id="profiles-form"><label for="nickname">Ник профиля</label><input id="nickname" maxlength="16" minlength="3" pattern="[A-Za-z0-9_]{3,16}" required spellcheck="false" autocomplete="off"><div class="profiles-actions"><button class="secondary-button" type="submit" id="profiles-submit">Добавить</button><button class="secondary-button" type="button" id="profiles-cancel" hidden>Отмена</button></div></form>
     <p id="profiles-status" role="status"></p>
   </dialog>
+  <script src="startup.js"></script>
   <script src="renderer.js"></script>
   <script src="titlebar.js"></script>
   <script src="home-art.js"></script>

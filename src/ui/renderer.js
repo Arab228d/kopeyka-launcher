@@ -109,9 +109,10 @@ async function init() {
     config.profiles ||= [config.nickname]; $('profile-name').textContent = config.nickname;
     $('memory').value = config.memory; $('snapshots').checked = config.snapshots; $('historical').checked = config.historical; $('loader').value = config.loader || 'vanilla'; $('game-path').textContent = config.gameDirectory;
     $('memory-hint').textContent = `На компьютере ${config.totalMemory} ГБ. Оставь минимум 1 ГБ для Windows.`;
+    window.dispatchEvent(new Event('ui-settings-ready'));
     const result = await api.versions(); versions = result.versions; $('version').value = ''; renderVersions(); versionsReady = true; updateModProfile(); setBusy(false);
     status('');
-  } catch (error) { status(error.message, true); log(error.message); }
+  } catch (error) { status(error.message, true); log(error.message); window.dispatchEvent(new Event('ui-settings-ready')); }
 }
 init();
 function modStatus(message, error = false) { $('mods-status').textContent = message; $('mods-status').classList.toggle('error', error); }

@@ -1,6 +1,6 @@
 {
   "name": "kopeyka-launcher",
-  "version": "0.2.0-beta",
+  "version": "0.2.1-beta",
   "description": "KOPEYKA Laucher — Minecraft Java launcher for Windows",
   "main": "src/main.js",
   "author": "KOPEYKA",

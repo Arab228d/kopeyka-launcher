@@ -1,0 +1,19 @@
+.splash-only { margin: 0; background: #000; }
+#startup-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: #000; opacity: 1; transition: opacity 420ms ease; }
+.startup-logo { width: clamp(180px, 27vw, 360px); max-height: 62vh; object-fit: contain; animation: startup-pulse 1.6s ease-in-out infinite; user-select: none; -webkit-user-drag: none; }
+.splash-only #startup-overlay { -webkit-app-region: drag; }
+body.booting .app-shell, body.booting .titlebar { opacity: 0; }
+body.booting .app-shell { pointer-events: none; }
+body.boot-reveal #startup-overlay { opacity: 0; pointer-events: none; }
+body.boot-reveal .titlebar { animation: startup-fade 380ms ease both; }
+body.boot-reveal .sidebar { animation: startup-slide 500ms cubic-bezier(.2,.75,.25,1) both; }
+body.boot-reveal .world-heading { animation: startup-fade 550ms 80ms ease both; }
+body.boot-reveal .play-panel { animation: startup-rise 550ms 140ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes startup-pulse { 0%,100% { opacity: .62; transform: scale(.985); } 50% { opacity: 1; transform: scale(1); } }
+@keyframes startup-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes startup-slide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes startup-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .startup-logo, body.boot-reveal .titlebar, body.boot-reveal .sidebar, body.boot-reveal .world-heading, body.boot-reveal .play-panel { animation: none; }
+  #startup-overlay { transition: none; }
+}

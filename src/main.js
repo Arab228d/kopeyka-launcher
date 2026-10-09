@@ -39,6 +39,13 @@ async function getManifest() {
   return manifest;
 }
 app.whenReady().then(async () => {
+  const display = screen.getPrimaryDisplay().workAreaSize;
+  window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, show: false, backgroundColor: '#000000', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  registerWindowControls(window);
+  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  window.webContents.on('will-navigate', event => event.preventDefault());
+  window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show(); });
+  await window.loadFile(path.join(__dirname, 'ui', 'splash.html'));
   await fs.mkdir(app.getPath('userData'), { recursive: true });
   try { settings = validateSettings(JSON.parse(await fs.readFile(configPath(), 'utf8')), defaults()); }
   catch { settings = defaults(); }
@@ -142,11 +149,6 @@ app.whenReady().then(async () => {
       return { ok: false, error: error.message };
     } finally { busy = false; }
   });
-  const display = screen.getPrimaryDisplay().workAreaSize;
-  window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, backgroundColor: '#202124', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
-  registerWindowControls(window);
-  window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
-  window.webContents.on('will-navigate', event => event.preventDefault());
   await window.loadFile(path.join(__dirname, 'ui', 'index.html'));
   if (process.env.KOPEYKA_SCREENSHOT) {
     setTimeout(async () => {

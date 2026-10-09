@@ -18,7 +18,7 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 app.whenReady().then(async () => {
   try {
     await fs.mkdir(output, { recursive: true });
-    ipcMain.handle('launcher:settings', () => ({ nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }));
+    ipcMain.handle('launcher:settings', async () => { await delay(1200); return { nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }; });
     ipcMain.handle('launcher:versions', () => ({ latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
     let savedSettings;
     ipcMain.handle('launcher:save', (_, input) => { savedSettings = require('../src/config').validateSettings(input, input); return savedSettings; });
@@ -31,8 +31,13 @@ app.whenReady().then(async () => {
     require('../src/window-controls').registerWindowControls(window);
     const errors = [];
     window.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message); });
+    await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'splash.html'));
+    await window.webContents.executeJavaScript("document.querySelector('.startup-logo').decode()");
+    await fs.writeFile(path.join(output, 'startup-logo.png'), (await window.webContents.capturePage()).toPNG());
     await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
+    assert.equal(await window.webContents.executeJavaScript("document.body.classList.contains('booting') && document.querySelector('.app-shell').inert && !!document.getElementById('startup-overlay')"), true, 'Splash covers UI while local settings load');
     await delay(2200);
+    assert.equal(await window.webContents.executeJavaScript("!document.querySelector('.app-shell').inert && !document.getElementById('startup-overlay')"), true, 'Startup reveals the UI and removes the splash');
     async function read() {
       return window.webContents.executeJavaScript(`(() => {
         const art = document.getElementById('home-art');

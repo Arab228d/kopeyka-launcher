@@ -4,7 +4,9 @@
 :root {
   --surface-shape: polygon(12px 0,calc(100% - 12px) 0,calc(100% - 12px) 4px,calc(100% - 4px) 4px,calc(100% - 4px) 12px,100% 12px,100% calc(100% - 12px),calc(100% - 4px) calc(100% - 12px),calc(100% - 4px) calc(100% - 4px),calc(100% - 12px) calc(100% - 4px),calc(100% - 12px) 100%,12px 100%,12px calc(100% - 4px),4px calc(100% - 4px),4px calc(100% - 12px),0 calc(100% - 12px),0 12px,4px 12px,4px 4px,12px 4px);
 }
-.nav-button, .profile, .launch-side, .field-shell, .secondary-button, .settings-card, .optifine-panel, .profile-row { clip-path: var(--surface-shape); border-radius: 0; }
+.nav-button, .profile, .launch-side, .field-shell, .secondary-button, .settings-card, .optifine-panel, .profile-row { clip-path: none; border-radius: 10px; }
+.nav-button.active::before, .sidebar::before, .sidebar::after { display: none; }
+.field-shell { overflow: hidden; }
 .profile, .settings-card, .optifine-panel { overflow: hidden; }
 #profiles-dialog { border-radius: 12px; }
 #profiles-dialog input { border-radius: 6px; }
