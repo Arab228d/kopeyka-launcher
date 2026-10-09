@@ -4,7 +4,9 @@
 
 ## Скачать для Windows
 
-[Установщик 0.1.11](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.1.11/KOPEYKA-Laucher-Setup-0.1.11.exe) · [Переносимая версия 0.1.11](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.1.11/KOPEYKA-Laucher-0.1.11.exe) · [Все релизы](https://github.com/Arab228d/kopeyka-launcher/releases)
+[Установщик 0.1 Alpha](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.1.0-alpha/KOPEYKA-Laucher-Setup-0.1.0-alpha.exe) · [Переносимая версия 0.1 Alpha](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.1.0-alpha/KOPEYKA-Laucher-0.1.0-alpha.exe) · [Все релизы](https://github.com/Arab228d/kopeyka-launcher/releases)
+
+Текущая версия — **0.1 Alpha** (`0.1.0-alpha` в файлах сборки). Это предварительный релиз.
 
 Поддерживается Windows x64. Установщик создаёт ярлыки; переносимую версию можно запускать без установки. Java автоматически загружается при первом запуске игры.
 
