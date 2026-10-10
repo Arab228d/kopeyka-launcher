@@ -1,0 +1,44 @@
+/* Nine-slice vector frames keep the pixel corners intact at every control size. */
+:root { --frame-normal: url('assets/button-frames/slate.svg'); --frame-hover: url('assets/button-frames/hover.svg'); --frame-gold: url('assets/button-frames/gold.svg'); --frame-disabled: url('assets/button-frames/disabled.svg'); }
+.nav-button, .launch-side, .profile, .window-button, .version-shell {
+  --frame: var(--frame-normal);
+  border: 8px solid transparent; border-image: var(--frame) 12 fill / 12px / 0 stretch;
+  background: none; border-radius: 0; clip-path: none; box-shadow: none; backdrop-filter: none;
+  color: #e6eef6; text-shadow: 1px 2px #101c26;
+}
+.nav-button:hover:not(.active):not(:disabled), .launch-side:hover:not(:disabled), .profile:hover:not(:disabled), .window-button:hover:not(:disabled), .version-shell:hover, .version-shell:focus-within { --frame: var(--frame-hover); background: none; box-shadow: none; }
+.nav-button.active, .nav-button.active:hover, body:has(#profiles-dialog[open]) .profile { --frame: var(--frame-gold); background: none; color: #fff0b3; box-shadow: none; filter: drop-shadow(0 0 5px #eebc3133); }
+.nav-button:disabled, .launch-side:disabled, .profile:disabled, .window-button:disabled, .version-shell:has(select:disabled) { --frame: var(--frame-disabled); opacity: 1; color: #7c8994; }
+.nav-button { padding: 9px 10px; gap: 13px; }
+.nav-button::before, .nav-button::after { display: none !important; }
+.nav-dot { flex-shrink: 0; }
+.nav-icon { width: 26px; height: 26px; }
+.launch-side { display: flex; justify-content: center; align-items: center; gap: 10px; padding: 4px 6px; height: 54px; font-size: 9px; }
+.action-icon { display: block; width: 23px; height: 23px; flex-shrink: 0; }
+.settings-icon { background: currentColor; mask: url('assets/sidebar-icons/settings.svg') center / contain no-repeat; }
+.mods-icon { background: url('assets/sidebar-icons/mod-cube.svg') center / contain no-repeat; }
+.profile { padding: 7px 9px; gap: 12px; overflow: visible; }
+.profile-marker { background: #dfebf5; filter: drop-shadow(1px 2px #101c26); }
+.profile:hover .profile-marker, body:has(#profiles-dialog[open]) .profile-marker { background: #f4d16f; }
+.avatar { flex-shrink: 0; }
+.sidebar-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.sidebar-tools .nav-button { min-height: 36px; height: 36px; padding: 0 4px; gap: 7px; justify-content: center; font: 12px/1.2 'Segoe UI', sans-serif; font-weight: 600; }
+.sidebar-tools .nav-icon { width: 16px; height: 16px; }
+.window-button { border-width: 5px; border-image-width: 5px; padding: 0; }
+.window-button:hover { color: #e9f7ff; }
+.close-button:hover { --frame: var(--frame-hover); color: #ffc7b8; box-shadow: none; }
+.window-button:active { background: none; box-shadow: none; }
+.play-fields { width: min(360px, 76%); }
+.version-shell { display: block; position: relative; padding: 0; overflow: visible; }
+.version-shell::before { content: ''; display: block; position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 29px; height: 31px; background: url('assets/startup-logo.png') center / contain no-repeat; pointer-events: none; }
+.play-fields .version-shell select { height: 38px; padding: 0 28px 0 45px; margin: 0; text-align: left; font-size: 10px; background: none; border: 0; box-shadow: none; }
+.version-shell .field-arrow { top: 16px; right: 7px; }
+.version-shell:has(select:disabled)::before { opacity: .45; }
+.launch-actions .launch-button { border: 8px solid transparent; border-image: url('assets/button-frames/green.svg') 12 fill / 12px / 0 stretch; background: none; clip-path: none; box-shadow: none; height: 64px; padding: 0 14px; }
+.launch-actions .launch-button::before { display: none; }
+.launch-actions .launch-button::after { inset: 5px; }
+.launch-actions .launch-button:hover:not(:disabled), .launch-actions .launch-button:focus-visible { border-image-source: url('assets/button-frames/green-hover.svg'); }
+.launch-actions .launch-button:disabled { border-image-source: url('assets/button-frames/green-disabled.svg'); color: #78968e; opacity: 1; text-shadow: 2px 2px #173c30; }
+.launch-button:disabled .pixel-arrow { background: #78968e; filter: none; }
+.launch-glow { filter: drop-shadow(0 0 4px #58ff3155); }
+@media (max-width: 1100px) { .launch-side { gap: 6px; font-size: 8px; } .action-icon { width: 18px; height: 18px; } .nav-button { gap: 10px; padding-left: 7px; padding-right: 7px; } }

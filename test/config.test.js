@@ -20,3 +20,10 @@ test('migrates old nicknames and persists up to 15 distinct local profiles', () 
   for (const invalid of [[], [...profiles, 'Extra'], ['Player', 'player'], ['Player', '../bad']]) assert.throws(() => validateSettings({ profiles: invalid }, defaults));
   assert.throws(() => validateSettings({ profiles: ['Other'], nickname: 'Player' }, defaults));
 });
+
+test('migrates old defaults to latest release and preserves explicit version choices', () => {
+  assert.equal(validateSettings({}, defaults).useLatestRelease, true);
+  const saved = validateSettings({ useLatestRelease: false, version: '1.20.1', loader: 'fabric' }, defaults);
+  assert.equal(validateSettings(JSON.parse(JSON.stringify(saved)), defaults).useLatestRelease, false);
+  assert.equal(saved.version, '1.20.1');
+});

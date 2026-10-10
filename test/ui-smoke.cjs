@@ -19,7 +19,7 @@ app.whenReady().then(async () => {
   try {
     await fs.mkdir(output, { recursive: true });
     ipcMain.handle('launcher:settings', async () => { await delay(1200); return { nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }; });
-    ipcMain.handle('launcher:versions', () => ({ latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
+    ipcMain.handle('launcher:versions', () => ({ latest: { release: '26.3' }, versions: [{ id: '26.4-snapshot', type: 'snapshot' }, { id: '26.3', type: 'release' }, { id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
     let savedSettings;
     ipcMain.handle('launcher:save', (_, input) => { savedSettings = require('../src/config').validateSettings(input, input); return savedSettings; });
     let installedMods = [];
@@ -37,6 +37,8 @@ app.whenReady().then(async () => {
     await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
     assert.equal(await window.webContents.executeJavaScript("document.body.classList.contains('booting') && document.querySelector('.app-shell').inert && !!document.getElementById('startup-overlay')"), true, 'Splash covers UI while local settings load');
     await delay(2200);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('version').value"), '26.3');
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('version').options[0].value"), '26.3');
     assert.equal(await window.webContents.executeJavaScript("!document.querySelector('.app-shell').inert && !document.getElementById('startup-overlay')"), true, 'Startup reveals the UI and removes the splash');
     async function read() {
       return window.webContents.executeJavaScript(`(() => {
@@ -120,6 +122,7 @@ app.whenReady().then(async () => {
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('mods-catalog') === null && document.getElementById('mods-install') === null"), true, 'Catalog is removed');
     await window.webContents.executeJavaScript("document.getElementById('mods-import').click()"); await delay(600);
     assert.equal(installedMods.length, 1);
+    assert.equal(savedSettings.useLatestRelease, false);
     assert.equal(savedSettings.version, '1.21.1'); assert.equal(savedSettings.loader, 'fabric');
     assert.ok(await window.webContents.executeJavaScript("[...document.querySelectorAll('#mods-installed-list .mod-cover')].some(i=>i.complete && i.naturalWidth>0)"), 'Local mod icon loads');
     window.show(); window.focus(); await delay(600);

@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="pixel-surfaces.css">
   <link rel="stylesheet" href="startup.css">
+  <link rel="stylesheet" href="asset-buttons.css">
 </head>
 <body class="booting">
   <div id="startup-overlay" role="status" aria-label="Загрузка лаунчера"><img class="startup-logo" src="assets/startup-logo.png" alt="KOPEYKA"></div>
@@ -37,10 +38,8 @@
   <aside class="sidebar">
     <nav>
       <button class="nav-button active" data-page="home"><span class="nav-icon">▦</span>Minecraft Java<span class="nav-dot"></span></button>
-      <button class="nav-button" data-page="logs"><span class="nav-icon">≡</span>Журнал запуска</button>
-      <button class="nav-button" id="card-folder"><span class="nav-icon">▣</span>Папка игры</button>
     </nav>
-    <div class="sidebar-bottom"><button class="profile" id="profiles-open" aria-label="Редактор профилей" aria-haspopup="dialog"><div class="avatar"><i></i></div><div class="profile-info"><strong id="profile-name">Player</strong><span class="profile-status" aria-hidden="true"></span></div><span class="profile-marker" aria-hidden="true"></span></button></div>
+    <div class="sidebar-bottom"><div class="sidebar-tools"><button class="nav-button" data-page="logs" title="Журнал запуска" aria-label="Журнал запуска"><span class="nav-icon" aria-hidden="true">≡</span>Журнал</button><button class="nav-button" id="card-folder" title="Папка игры" aria-label="Папка игры"><span class="nav-icon" aria-hidden="true">▣</span>Папка</button></div><button class="profile" id="profiles-open" aria-label="Редактор профилей" aria-haspopup="dialog"><div class="avatar"><i></i></div><div class="profile-info"><strong id="profile-name">Player</strong><span class="profile-status" aria-hidden="true"></span></div><span class="profile-marker" aria-hidden="true"></span></button></div>
   </aside>
   <main>
     <section id="home" class="page">
@@ -50,9 +49,9 @@
         <div class="world-spacer" aria-hidden="true"></div>
         <div class="play-panel">
           <div class="launch-actions">
-            <button class="launch-side" data-page="settings">Настройки</button>
+            <button class="launch-side" data-page="settings"><span class="action-icon settings-icon" aria-hidden="true"></span>Настройки</button>
             <div class="launch-glow"><button id="play" class="launch-button" disabled><span class="pixel-arrow" aria-hidden="true"></span><span id="play-text">Играть</span></button></div>
-            <button class="launch-side" data-page="mods">Mods</button>
+            <button class="launch-side" data-page="mods"><span class="action-icon mods-icon" aria-hidden="true"></span>Mods</button>
           </div>
           <div class="play-fields"><label>ВЕРСИЯ ИГРЫ<span class="field-shell version-shell"><select id="version" aria-label="Версия игры"><option value="1.21.1">Загрузка версий…</option></select><span class="field-arrow" aria-hidden="true"></span></span></label></div>
           <div class="status-row" hidden><span id="status" role="status" aria-live="polite"></span><span id="percent"></span></div><progress id="progress" max="100" value="0" hidden></progress>

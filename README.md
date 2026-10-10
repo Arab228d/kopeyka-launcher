@@ -4,9 +4,9 @@
 
 ## Скачать для Windows
 
-[Установщик 0.2.1 Beta](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.2.1-beta/KOPEYKA-Laucher-Setup-0.2.1-beta.exe) · [Все релизы](https://github.com/Arab228d/kopeyka-launcher/releases)
+[Установщик 0.2.2 Beta](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.2.2-beta/KOPEYKA-Laucher-Setup-0.2.2-beta.exe) · [Все релизы](https://github.com/Arab228d/kopeyka-launcher/releases)
 
-Текущая версия — **0.2.1 Beta** (`0.2.1-beta` в файлах сборки). Это предварительный релиз.
+Текущая версия — **0.2.2 Beta** (`0.2.2-beta` в файлах сборки). Это предварительный релиз.
 
 Поддерживается Windows x64. EXE устанавливает лаунчер для текущего пользователя в один шаг и создаёт ярлыки на рабочем столе и в меню «Пуск». Включены Electron и Eclipse Temurin Java 8, 16, 17, 21 и 25 с лицензиями. Отдельно устанавливать Node.js или Java не нужно. Файлы Minecraft и загрузчиков скачиваются при первом запуске: нужен интернет. Для других поколений игры Java при необходимости загружается автоматически.
 

@@ -91,7 +91,12 @@ $('play').addEventListener('click', async () => {
 
 $('snapshots').addEventListener('change', () => { config.snapshots = $('snapshots').checked; renderVersions(); });
 $('historical').addEventListener('change', () => { config.historical = $('historical').checked; renderVersions(); });
-$('version').addEventListener('change', () => { $('loader').value = $('version').value.split('|')[1] || 'vanilla'; updateModProfile(); });
+$('version').addEventListener('change', async () => {
+  $('loader').value = $('version').value.split('|')[1] || 'vanilla';
+  config.useLatestRelease = false; config.version = $('version').value.split('|')[0]; config.loader = $('loader').value;
+  updateModProfile();
+  try { await api.save(current()); } catch (error) { status(error.message, true); }
+});
 $('save').addEventListener('click', async () => {
   try { config = await api.save(current()); $('profile-name').textContent = config.nickname; $('settings-status').textContent = 'Настройки сохранены.'; }
   catch (error) { $('settings-status').textContent = error.message; }
@@ -110,7 +115,11 @@ async function init() {
     $('memory').value = config.memory; $('snapshots').checked = config.snapshots; $('historical').checked = config.historical; $('loader').value = config.loader || 'vanilla'; $('game-path').textContent = config.gameDirectory;
     $('memory-hint').textContent = `На компьютере ${config.totalMemory} ГБ. Оставь минимум 1 ГБ для Windows.`;
     window.dispatchEvent(new Event('ui-settings-ready'));
-    const result = await api.versions(); versions = result.versions; $('version').value = ''; renderVersions(); versionsReady = true; updateModProfile(); setBusy(false);
+    const result = await api.versions();
+    const latest = result.versions.find(v => v.id === result.latest?.release && v.type === 'release') || result.versions.find(v => v.type === 'release');
+    versions = latest ? [latest, ...result.versions.filter(v => v.id !== latest.id)] : result.versions;
+    if (latest && config.useLatestRelease !== false) { config.version = latest.id; config.loader = 'vanilla'; }
+    $('version').value = ''; renderVersions(); versionsReady = true; updateModProfile(); setBusy(false);
     status('');
   } catch (error) { status(error.message, true); log(error.message); window.dispatchEvent(new Event('ui-settings-ready')); }
 }
