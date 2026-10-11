@@ -16,6 +16,9 @@ app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.whenReady().then(async () => {
   try {
     ipcMain.handle('launcher:settings', () => ({ nickname: 'Player', memory: 4, version: '1.21.1', loader: 'vanilla', gameDirectory: data, totalMemory: 16 }));
+    ipcMain.handle('launcher:loader-catalog', () => ({forge:{},fabric:{},neoforge:{},optifine:{},errors:[]}));
+    ipcMain.handle('launcher:update-check', () => null);
+    ipcMain.handle('launcher:release-news', () => ({unread:false}));
     ipcMain.handle('launcher:versions', () => ({ versions: [{ id: '1.21.1', type: 'release' }] }));
     const win = new BrowserWindow({ width: 1240, height: 820, frame: false, webPreferences: { preload: path.join(__dirname, '../src/preload.js'), sandbox: true, backgroundThrottling: false } });
     registerWindowControls(win);

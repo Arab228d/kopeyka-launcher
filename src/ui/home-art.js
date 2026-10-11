@@ -47,7 +47,7 @@
     } else schedule();
   }
   shell.addEventListener('pointermove', event => {
-    if (event.pointerType === 'touch' || (paused && !zooming) || reducedMotion.matches) return;
+    if (home.hidden || document.hidden || document.querySelector('dialog[open]') || event.pointerType === 'touch' || (paused && !zooming) || reducedMotion.matches) return;
     const rect = bounds || (bounds = home.getBoundingClientRect());
     targetX = Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1));
     targetY = Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1));

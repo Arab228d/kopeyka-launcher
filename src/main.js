@@ -12,6 +12,7 @@ const mods = require('./mods');
 const shaders = require('./shaders');
 const { fetchCatalog } = require('./loader-catalog');
 const updates = require('./updates');
+const { backgroundCatalog } = require('./background-catalog');
 const { ReleaseNews } = require('./release-news');
 const { prepareLoader, importOptifine } = require('./loaders');
 const { launchMemory, launchFailure } = require('./launch-health');
@@ -87,14 +88,15 @@ app.whenReady().then(async () => {
   ipcMain.handle('launcher:settings', () => ({ ...settings, playtimeSeconds: playtime.total(), totalMemory: Math.floor(os.totalmem() / 1073741824), appVersion: app.getVersion() }));
   ipcMain.handle('launcher:textures', () => loadMinecraftTextures([settings.gameDirectory, defaults().gameDirectory, path.join(app.getPath('appData'), '.minecraft')], app.getPath('userData'), settings.version));
   ipcMain.handle('launcher:save', (_, input) => { if (busy) throw new Error('Дождитесь завершения запуска.'); return save(input); });
+  const versionCatalog = backgroundCatalog(path.join(stableData, 'versions-cache.json'), () => getManifest(true), value => Array.isArray(value.versions) && value.versions.length > 0, value => send({kind:'versions-refreshed', data:value}));
+  const loadersCached = backgroundCatalog(path.join(stableData, 'loader-catalog.json'), () => fetchCatalog(stableData), value => ['forge','fabric','neoforge','optifine'].some(key => value[key] && typeof value[key] === 'object'), value => send({kind:'loaders-refreshed', data:value}));
   ipcMain.handle('launcher:versions', async (_, refresh) => {
-    const data = await getManifest(refresh === true);
+    const data = await versionCatalog(refresh === true);
     return { latest: data.latest, versions: data.versions.map(({ id, type }) => ({ id, type })) };
   });
-  let loaderCatalogTask, pendingUpdate;
+  let pendingUpdate;
   ipcMain.handle('launcher:loader-catalog', (_, refresh) => {
-    if (!loaderCatalogTask || refresh === true) loaderCatalogTask = fetchCatalog(app.getPath('userData'));
-    return loaderCatalogTask;
+    return loadersCached(refresh === true);
   });
   ipcMain.handle('launcher:update-check', async () => {
     pendingUpdate = await updates.checkUpdate(app.getVersion());

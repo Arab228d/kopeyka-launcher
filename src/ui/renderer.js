@@ -1,6 +1,14 @@
 const $ = id => document.getElementById(id);
 let config, versions = [], busy = false, versionsReady = false, modsBusy = false, loaderCatalog = null, updateAvailable = null, updating = false;
 const api = window.launcher;
+let refreshedVersions = null, refreshedLoaders = null;
+function applyCatalogRefresh() {
+  if (!versionsReady || busy || modsBusy) return;
+  if (refreshedVersions) { versions = refreshedVersions.versions; refreshedVersions = null; }
+  if (refreshedLoaders) { loaderCatalog = refreshedLoaders; refreshedLoaders = null; }
+  renderVersions(); updateModProfile();
+}
+const logClock = new Intl.DateTimeFormat('ru-RU', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 let logText = '', logQueue = [], logQueueSize = 0, logTimer;
 function page(name) {
   document.body.classList.toggle('mods-view', name === 'mods');
@@ -16,7 +24,7 @@ function showPlaytime(seconds = 0) { const minutes = Math.floor(seconds / 60); $
 function current() { return { ...config, nickname: config.nickname, version: $('version').value.split('|')[0], memory: Number($('memory').value), snapshots: $('snapshots').checked, historical: $('historical').checked, loader: $('loader').value }; }
 function setBusy(value, running = false) {
   window.dispatchEvent(new CustomEvent('game-running', { detail: value || modsBusy }));
-  busy = value; $('play').disabled = value || modsBusy || !versionsReady;
+  busy = value; if (!value && (refreshedVersions || refreshedLoaders)) applyCatalogRefresh(); $('play').disabled = value || modsBusy || !versionsReady;
   $('play-text').textContent = running ? 'В игре' : value ? 'Ждём…' : 'Играть';
   $('play').setAttribute('aria-busy', String(value));
   ['version', 'nickname', 'memory', 'snapshots', 'historical', 'choose-folder', 'save', 'loader', 'mods-import', 'optifine-import', 'profiles-open', 'refresh-versions', 'check-updates', 'launcher-update'].forEach(id => $(id).disabled = value || modsBusy);
@@ -44,7 +52,7 @@ function renderVersions() {
   $('loader').value = $('version').value.split('|')[1] || 'vanilla';
 }
 function log(message) {
-  const line = `[${new Date().toLocaleTimeString('ru-RU')}] ${message}\n`;
+  const line = `[${logClock.format(Date.now())}] ${message}\n`;
   logQueue.push(line); logQueueSize += line.length;
   if (logQueueSize > 160000) flushLogs();
   if (!logTimer) logTimer = setTimeout(flushLogs, 100);
@@ -55,10 +63,13 @@ function flushLogs() {
   if ($('logs').hidden) return;
   const el = $('log');
   if (el.textContent === logText) return;
+  const follow = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
   el.textContent = logText;
-  el.scrollTop = el.scrollHeight;
+  if (follow) el.scrollTop = el.scrollHeight;
 }
 api.onEvent(event => {
+  if (event.kind === 'versions-refreshed') { refreshedVersions = event.data; applyCatalogRefresh(); return; }
+  if (event.kind === 'loaders-refreshed') { refreshedLoaders = event.data; applyCatalogRefresh(); return; }
   if (event.kind === 'playtime') showPlaytime(event.seconds);
   if (event.kind === 'mods-progress') {
     modStatus(event.message); if ($('shaders-dialog').open) $('shaders-status').textContent = event.message + (event.percent === null ? '' : ' ' + Math.round(event.percent) + '%'); $('mods-progress').hidden = false;
