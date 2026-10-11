@@ -26,7 +26,7 @@ async function checkUpdate(current, request = fetch) {
   const candidates = (await response.json()).filter(r => !r.draft && (!r.prerelease || parseVersion(current)?.pre) && newer(r.tag_name, current) && releaseAsset(r));
   candidates.sort((a,b) => newer(a.tag_name,b.tag_name) ? -1 : newer(b.tag_name,a.tag_name) ? 1 : 0);
   const release = candidates[0];
-  return release ? { version: release.tag_name.replace(/^v/, ''), asset: releaseAsset(release) } : null;
+  return release ? { version: release.tag_name.replace(/^v/, ''), asset: releaseAsset(release), notes: String(release.body || "").slice(0,16000) } : null;
 }
 async function downloadUpdate(update, directory, report = () => {}, request = fetch) {
   const asset = releaseAsset({ assets: [update?.asset] });

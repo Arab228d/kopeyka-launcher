@@ -12,6 +12,7 @@ const mods = require('./mods');
 const shaders = require('./shaders');
 const { fetchCatalog } = require('./loader-catalog');
 const updates = require('./updates');
+const { ReleaseNews } = require('./release-news');
 const { prepareLoader, importOptifine } = require('./loaders');
 const { launchMemory, launchFailure } = require('./launch-health');
 const { registerWindowControls } = require('./window-controls');
@@ -69,10 +70,15 @@ app.whenReady().then(async () => {
   window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show(); });
   await window.loadFile(path.join(__dirname, 'ui', 'splash.html'));
   await fs.mkdir(app.getPath('userData'), { recursive: true });
+  const existingInstall = nativeFs.existsSync(path.join(stableData, "settings.json")) || legacyData.some(directory => nativeFs.existsSync(path.join(directory, "settings.json")));
   settings = await loadSettings(stableData, legacyData, defaults());
   settings.gameDirectory = await migrateLegacyGame(settings.gameDirectory, os.homedir());
   await save(settings);
   await playtime.load();
+  const releaseNews = new ReleaseNews(stableData, app.getVersion(), await fs.readFile(path.join(__dirname, "release-notes.txt"), "utf8"), existingInstall);
+  await releaseNews.load();
+  ipcMain.handle("launcher:release-news", () => releaseNews.current());
+  ipcMain.handle("launcher:release-news-seen", () => releaseNews.acknowledge());
   const publishTime = () => send({ kind: 'playtime', seconds: playtime.total() });
   const checkpoint = stop => playtime.checkpoint(stop).then(publishTime).catch(error => send({ kind: 'log', message: 'Не удалось сохранить время игры: ' + error.message }));
   setInterval(() => { if (game) checkpoint(false); }, 30000).unref();
@@ -101,6 +107,7 @@ app.whenReady().then(async () => {
     busy = true;
     try {
       const installer = await updates.downloadUpdate(pendingUpdate, path.join(app.getPath('userData'), 'updates'), send);
+      await releaseNews.prepare(pendingUpdate);
       await updates.installUpdate(installer, process.execPath, process.pid);
       app.quit();
       return {ok: true};

@@ -10,6 +10,7 @@
     document.body.classList.remove('booting');
     document.body.classList.add('boot-reveal');
     document.querySelector('.app-shell').inert = false;
+    window.dispatchEvent(new Event('ui-revealed'));
     setTimeout(() => { document.getElementById('startup-overlay').remove(); document.body.classList.remove('boot-reveal'); }, 750);
   }
   // A slow network or broken image must never trap the user on the splash screen.

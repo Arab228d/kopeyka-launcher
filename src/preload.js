@@ -5,6 +5,8 @@ contextBridge.exposeInMainWorld('launcher', {
   closeWindow: () => ipcRenderer.invoke('launcher:window', 'close'),
   windowState: () => ipcRenderer.invoke('launcher:window', 'state'),
   onWindowState: handler => { ipcRenderer.on('launcher:window-state', (_, state) => handler(state)); },
+  releaseNews: () => ipcRenderer.invoke("launcher:release-news"),
+  acknowledgeNews: () => ipcRenderer.invoke("launcher:release-news-seen"),
   settings: () => ipcRenderer.invoke('launcher:settings'),
   save: settings => ipcRenderer.invoke('launcher:save', settings),
   versions: refresh => ipcRenderer.invoke('launcher:versions', refresh),

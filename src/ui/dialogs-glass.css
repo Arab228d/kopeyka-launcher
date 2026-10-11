@@ -1,0 +1,68 @@
+#profiles-dialog, #news-dialog { width: min(650px,92vw); max-height: 84vh; padding: 28px; color: #eaf3fb; background: linear-gradient(135deg,#30475cb0,#142636dd); backdrop-filter: blur(24px) saturate(.7); border: 1px solid #b6d3e55c; border-radius: 14px; box-shadow: inset 0 1px #ffffff20,0 24px 80px #0006; }
+#profiles-dialog::backdrop, #news-dialog::backdrop { background: #05132088; backdrop-filter: blur(12px) saturate(.6); }
+#profiles-dialog .secondary-button, #news-dialog .secondary-button { border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; clip-path: var(--surface-shape); background: #263e5166; box-shadow: none; padding: 6px 10px; font: 8px/1.8 PlayPixel,monospace; color: #e9f3fb; }
+#profiles-dialog .secondary-button:hover:not(:disabled), #news-dialog .secondary-button:hover { border-image-source: var(--frame-hover); background: #3b587a88; }
+#profiles-dialog #profiles-close, #news-close { width: 40px; height: 40px; padding: 0; }
+.profiles-hint { color: #aebfce; margin-top: 14px; }
+#profiles-list { gap: 12px; scrollbar-color: #92b0c566 transparent; }
+.profile-row { padding: 12px; border: 1px solid #b7d2e52b; border-radius: 8px; background: #0e213a38; }
+.profile-row.selected { border-color: #e5c67b66; background: linear-gradient(115deg,#b18b3433,#21344855); }
+.profile-choice { display: flex; gap: 14px; align-items: center; padding: 0; font: 14px/1.6 'Segoe UI',sans-serif; }
+.profile-choice small { display: block; color: #a8becf; font-size: 11px; }
+.profile-card-avatar { flex-shrink: 0; width: 44px; height: 44px; background: url('assets/sidebar-icons/steve.svg') center / contain no-repeat; image-rendering: pixelated; }
+#profiles-form { border-top: 1px solid #bdcedd22; padding-top: 20px; }
+#profiles-form label { color: #c4d5e1; }
+#profiles-form #nickname { margin-top: 10px; border: 1px solid #b2cedc55; border-radius: 7px; background: #0b1c2c55; box-shadow: inset 0 1px #ffffff0d; padding: 13px 14px; color: #eff7ff; font: 14px 'Segoe UI',sans-serif; }
+#profiles-submit, #news-done { border-image-source: var(--frame-gold) !important; color: #ffe5a0 !important; }
+#news-dialog h2 { font: 18px/1.7 PlayPixel,monospace; margin: 0; }
+.news-eyebrow { font: 11px 'Segoe UI',sans-serif; color: #d4bc84; margin: 0 0 10px; letter-spacing: 2px; }
+#news-version { color: #bad0e1; margin: 18px 0; }
+#news-body { white-space: pre-wrap; overflow-wrap: break-word; font: 14px/1.85 'Segoe UI',sans-serif; max-height: 45vh; overflow: auto; background: #0a1b2c45; border: 1px solid #bfd7e31f; border-radius: 8px; padding: 20px; margin-bottom: 20px; scrollbar-color: #92b0c566 transparent; }
+#news-status { font: 12px 'Segoe UI',sans-serif; color: #efcf8b; margin: 8px 0 0; }
+#news-dialog { opacity: 0; transform: translateY(10px) scale(.98); transition: opacity .2s, transform .24s, display .24s allow-discrete, overlay .24s allow-discrete; }
+#news-dialog[open] { opacity: 1; transform: none; }
+@starting-style { #news-dialog[open] { opacity: 0; transform: translateY(10px) scale(.98); } }
+@media(prefers-reduced-motion:reduce) { #news-dialog { transition: none; transform: none; } }
+/* Profile editor: a compact player roster and a single-line create action. */
+#profiles-dialog { width: min(620px,92vw); padding: 26px; background: linear-gradient(135deg,#34495caf,#142331d4); border-radius: 12px; }
+#profiles-dialog .profiles-heading { padding-bottom: 4px; }
+#profiles-dialog .profiles-heading h2 { font-size: 19px; }
+#profiles-dialog .profiles-hint { margin: 8px 0 22px; font-size: 12px; color: #b5c8d6; }
+#profiles-list { margin: 0 0 22px; max-height: 34vh; gap: 10px; }
+#profiles-dialog .profile-row { min-height: 94px; padding: 14px; border: 1px solid #b7d2e52b; border-radius: 8px; background: #0d223455; gap: 8px; }
+#profiles-dialog .profile-row.selected { background: linear-gradient(110deg,#b08a3030,#13293f55); border-color: #d1b47566; }
+#profiles-dialog .profile-card-avatar { width: 58px; height: 58px; border: 3px solid #d6b46188; box-shadow: 0 4px 12px #07121b55; background-color: #172536; }
+#profiles-dialog .profile-choice { gap: 16px; font-size: 16px; font-weight: 600; }
+#profiles-dialog .profile-choice small { font-size: 11px; font-weight: 400; margin-top: 4px; }
+#profiles-dialog .profile-row > .secondary-button { min-height: 35px; padding: 3px 7px; font: 11px/1.7 'Segoe UI',sans-serif; }
+#profiles-dialog #profiles-form { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 10px; padding-top: 18px; }
+#profiles-form label { grid-column: 1 / -1; font-size: 12px; }
+#profiles-dialog #profiles-form #nickname { margin: 0; width: 100%; min-width: 0; height: 46px; padding: 12px 14px; background: #0b1c2c55; }
+#profiles-dialog .profiles-actions { margin: 0; gap: 8px; align-items: center; }
+#profiles-dialog #profiles-submit { height: 46px; min-width: 112px; }
+#profiles-dialog #profiles-status { margin: 10px 0 0; min-height: 0; }
+#profiles-dialog #profiles-status:empty { display: none; }
+#profiles-dialog #nickname:focus-visible { outline-color: #d5bd7b; }
+@media(max-width:700px) { #profiles-dialog .profile-row { flex-wrap: wrap; } #profiles-dialog .profile-choice { flex-basis: 100%; } #profiles-dialog #profiles-form { grid-template-columns: 1fr; } }
+/* Reuse the actual main-screen frames, including their filled centres. */
+#profiles-dialog { border: 10px solid transparent; border-image: var(--frame-normal) 12 fill / 14px / 0 stretch; background: none; border-radius: 0; backdrop-filter: none; box-shadow: none; padding: 22px; }
+#profiles-dialog .profiles-heading h2 { font: 18px/1.7 PlayPixel,monospace; color: #edf4fc; text-shadow: 2px 2px #0b1621; }
+#profiles-dialog .profiles-hint { color: #b8c9d7; }
+#profiles-dialog .profile-row { border: 8px solid transparent; border-image: var(--frame-normal) 12 fill / 12px / 0 stretch; background: none; border-radius: 0; padding: 10px; box-shadow: none; }
+#profiles-dialog .profile-row.selected { border-image-source: var(--frame-gold); background: none; border-color: transparent; }
+#profiles-dialog .profile-row:has(.profile-choice:hover:not(:disabled)) { border-image-source: var(--frame-hover); }
+#profiles-dialog .profile-choice { font: 11px/1.8 PlayPixel,monospace; color: #e8f2fc; text-shadow: 1px 2px #0e1b27; }
+#profiles-dialog .profile-choice:disabled { color: #ffe29b; }
+#profiles-dialog .profile-choice small { font: 11px/1.6 'Segoe UI',sans-serif; color: #b8c9d7; text-shadow: none; }
+#profiles-dialog .profile-card-avatar { width: 52px; height: 52px; box-shadow: none; border-color: #bb8946; }
+#profiles-dialog .secondary-button { border: 7px solid transparent; border-image: var(--frame-normal) 12 fill / 9px / 0 stretch; background: none; border-radius: 0; clip-path: none; box-shadow: none; font: 8px/1.8 PlayPixel,monospace; }
+#profiles-dialog .secondary-button:hover:not(:disabled) { background: none; border-image-source: var(--frame-hover); }
+#profiles-dialog .secondary-button:disabled { border-image-source: var(--frame-disabled); opacity: 1; color: #85919e; cursor: default; }
+#profiles-dialog #profiles-submit { border-image-source: url('assets/button-frames/green.svg') !important; color: #efffe8 !important; }
+#profiles-dialog #profiles-submit:hover:not(:disabled) { border-image-source: url('assets/button-frames/green-hover.svg') !important; }
+#profiles-dialog #profiles-submit:disabled { border-image-source: var(--frame-disabled) !important; color: #85919e !important; }
+#profiles-dialog #profiles-form #nickname { border: 8px solid transparent; border-image: var(--frame-normal) 12 fill / 10px / 0 stretch; background: none; border-radius: 0; box-shadow: none; padding: 5px 9px; font: 11px/1.6 PlayPixel,monospace; }
+#profiles-dialog #profiles-form #nickname::placeholder { font: 12px 'Segoe UI',sans-serif; }
+#profiles-dialog #profiles-form #nickname:focus { border-image-source: var(--frame-hover); outline: none; }
+#profiles-dialog #profiles-form label { font: 8px/1.8 PlayPixel,monospace; }
+#profiles-dialog #profiles-form { border-color: #8fa7ba33; }

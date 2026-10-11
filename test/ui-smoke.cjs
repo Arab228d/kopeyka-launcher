@@ -21,6 +21,8 @@ app.whenReady().then(async () => {
     ipcMain.handle('launcher:settings', async () => { await delay(1200); return { nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }; });
     ipcMain.handle('launcher:versions', () => ({ latest: { release: '26.3' }, versions: [{ id: '26.4-snapshot', type: 'snapshot' }, { id: '26.3', type: 'release' }, { id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
     ipcMain.handle('launcher:loader-catalog', () => ({fabric: {'26.3':true, '1.21.1':true, '1.20.1':true}, forge:{'1.21.1':'52.0.16'}, neoforge:{'1.21.1':'21.1.257'},optifine:{'1.21.1':'OptiFine_1.21.1_HD_U_J1.jar'},errors:[]}));
+    ipcMain.handle('launcher:release-news', () => ({version:'0.1.1-beta',body:'Новый редактор профилей\nПиксельные карточки и стеклянное окно.',unread:false}));
+    ipcMain.handle('launcher:release-news-seen', () => {});
     ipcMain.handle('launcher:update-check', () => ({version:'0.4.0'}));
     ipcMain.handle('launcher:update-install', () => { throw new Error('Test download failure'); });
     let savedSettings;
@@ -113,6 +115,9 @@ app.whenReady().then(async () => {
     await window.webContents.executeJavaScript("document.querySelector('[aria-label=\"Изменить SecondPlayer\"]').click(); document.getElementById('nickname').value='RenamedPlayer'; document.getElementById('profiles-form').requestSubmit()");
     await profileSaved();
     assert.equal(savedSettings.nickname, 'RenamedPlayer');
+    await delay(450);
+    await window.webContents.executeJavaScript("document.getAnimations().forEach(animation => animation.finish())");
+    await delay(350);
     await fs.writeFile(path.join(output, 'profiles-editor.png'), (await window.webContents.capturePage()).toPNG());
     await window.webContents.executeJavaScript("document.querySelector('.profile-choice').click()");
     await profileSaved(); assert.equal(savedSettings.nickname, 'Player');
@@ -158,6 +163,10 @@ app.whenReady().then(async () => {
     await delay(150);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('save').getBoundingClientRect().bottom <= innerHeight && document.documentElement.scrollWidth <= innerWidth"), true, 'Settings fit the minimum window');
     await fs.writeFile(path.join(output, 'settings-pixel.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.getElementById('news-open').click()"); await delay(350);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('news-dialog').open && document.getElementById('news-body').textContent.includes('Новый редактор')"),true);
+    await fs.writeFile(path.join(output, 'release-news.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.getElementById('news-done').click()"); await delay(350);
     for (let index = 0; index < 300; index++) window.webContents.send('launcher:event', { kind: 'log', message: `Buffered log sample ${index}` });
     await delay(250);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent"), '', 'Hidden journal does not update the DOM for each line');

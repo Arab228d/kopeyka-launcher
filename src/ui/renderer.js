@@ -205,8 +205,8 @@ function resetProfileForm() {
 function renderProfiles() {
   $('profiles-count').textContent = config.profiles.length;
   $('profiles-list').replaceChildren(...config.profiles.map(name => {
-    const row = document.createElement('div'); row.className = 'profile-row';
-    const choose = document.createElement('button'); choose.className = 'profile-choice'; choose.textContent = name + (name === config.nickname ? ' ✓' : ''); choose.disabled = name === config.nickname;
+    const row = document.createElement('div'); row.className = 'profile-row'; row.classList.toggle('selected', name === config.nickname);
+    const choose = document.createElement('button'); choose.className = 'profile-choice'; const avatar = document.createElement('span'); avatar.className = 'profile-card-avatar'; avatar.setAttribute('aria-hidden','true'); const label = document.createElement('span'); label.textContent = name; const detail = document.createElement('small'); detail.textContent = name === config.nickname ? 'Активный профиль' : 'Выбрать профиль'; const info = document.createElement('span'); info.append(label,detail); choose.append(avatar, info); choose.disabled = name === config.nickname;
     choose.addEventListener('click', () => saveProfiles(config.profiles, name));
     const edit = document.createElement('button'); edit.className = 'secondary-button'; edit.textContent = 'Изменить'; edit.setAttribute('aria-label', `Изменить ${name}`);
     edit.addEventListener('click', () => { editingProfile = name; $('nickname').value = name; $('profiles-submit').textContent = 'Сохранить'; $('profiles-submit').disabled = false; $('profiles-cancel').hidden = false; $('nickname').focus(); });
@@ -321,3 +321,28 @@ $('refresh-versions').addEventListener('click', async () => {
   } catch (error) { $('update-status').textContent = error.message; }
   finally { $('refresh-versions').disabled = false; }
 });
+let uiRevealed = !document.body.classList.contains('booting');
+let releaseNewsReady = false;
+async function showReleaseNews(automatic = false) {
+  if (!api.releaseNews) return;
+  try {
+    const news = await api.releaseNews();
+    if (automatic && !news.unread) return;
+    $('news-version').textContent = 'Версия ' + news.version;
+    $('news-body').textContent = news.body;
+    $('news-status').textContent = '';
+    if (!document.querySelector('dialog[open]')) $('news-dialog').showModal();
+  } catch (error) { log('Что нового: ' + error.message); }
+}
+window.addEventListener('ui-revealed', () => { uiRevealed = true; if (releaseNewsReady) showReleaseNews(true); });
+async function prepareReleaseNews() { releaseNewsReady = true; if (uiRevealed) await showReleaseNews(true); }
+prepareReleaseNews();
+$('news-open').addEventListener('click', () => showReleaseNews());
+async function dismissNews(event) {
+  if (event) event.preventDefault();
+  try { await api.acknowledgeNews(); $('news-dialog').close(); }
+  catch (error) { $('news-status').textContent = 'Не удалось сохранить: ' + error.message; }
+}
+$('news-close').addEventListener('click', dismissNews);
+$('news-done').addEventListener('click', dismissNews);
+$('news-dialog').addEventListener('cancel', dismissNews);
