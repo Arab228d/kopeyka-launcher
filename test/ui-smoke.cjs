@@ -20,9 +20,15 @@ app.whenReady().then(async () => {
     await fs.mkdir(output, { recursive: true });
     ipcMain.handle('launcher:settings', async () => { await delay(1200); return { nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }; });
     ipcMain.handle('launcher:versions', () => ({ latest: { release: '26.3' }, versions: [{ id: '26.4-snapshot', type: 'snapshot' }, { id: '26.3', type: 'release' }, { id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
+    ipcMain.handle('launcher:loader-catalog', () => ({fabric: {'26.3':true, '1.21.1':true, '1.20.1':true}, forge:{'1.21.1':'52.0.16'}, neoforge:{'1.21.1':'21.1.257'},optifine:{'1.21.1':'OptiFine_1.21.1_HD_U_J1.jar'},errors:[]}));
+    ipcMain.handle('launcher:update-check', () => ({version:'0.4.0'}));
+    ipcMain.handle('launcher:update-install', () => { throw new Error('Test download failure'); });
     let savedSettings;
     ipcMain.handle('launcher:save', (_, input) => { savedSettings = require('../src/config').validateSettings(input, input); return savedSettings; });
     let installedMods = [];
+    let shaderInstalled = false;
+    ipcMain.handle('launcher:shaders-search', (_, input, query, offset) => ({ total: 2, hits: [{ id: 'shaderA' + offset, title: 'Shader Preview', description: 'Soft light and clear water', author: 'Artist', downloads: 15000, icon: require('../src/ui/assets/island-textures.json').textures.dirt, gallery: [] }] }));
+    ipcMain.handle('launcher:shaders-install', (_, input, project) => { assert.equal(input.version, '1.21.1'); assert.equal(project, 'shaderA0'); shaderInstalled = true; return {file:'shader.zip'}; });
     ipcMain.handle('launcher:mods-list', () => installedMods);
     ipcMain.handle('launcher:mods-import', (_, input) => { assert.equal(input.loader, 'fabric'); installedMods = [{ file: 'local.jar', title: 'Local mod', enabled: true, icon: require('../src/ui/assets/island-textures.json').textures.dirt }]; return ['local.jar']; });
     ipcMain.handle('launcher:mods-toggle', () => { installedMods[0].enabled = !installedMods[0].enabled; });
@@ -37,8 +43,14 @@ app.whenReady().then(async () => {
     await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
     assert.equal(await window.webContents.executeJavaScript("document.body.classList.contains('booting') && document.querySelector('.app-shell').inert && !!document.getElementById('startup-overlay')"), true, 'Splash covers UI while local settings load');
     await delay(2200);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('launcher-update').hidden"), false);
+    await window.webContents.executeJavaScript("document.getElementById('launcher-update').click()"); await delay(100);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('play').disabled"), false);
+    assert.ok(await window.webContents.executeJavaScript("document.getElementById('update-status').textContent.includes('Test download failure')"));
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('version').value"), '26.3');
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('version').options[0].value"), '26.3');
+    assert.equal(await window.webContents.executeJavaScript("!!document.querySelector('#version option[value=\"26.3|optifine\"]')"), false);
+    assert.equal(await window.webContents.executeJavaScript("!!document.querySelector('#version option[value=\"1.21.1|neoforge\"]')"), true);
     assert.equal(await window.webContents.executeJavaScript("!document.querySelector('.app-shell').inert && !document.getElementById('startup-overlay')"), true, 'Startup reveals the UI and removes the splash');
     async function read() {
       return window.webContents.executeJavaScript(`(() => {
@@ -122,6 +134,18 @@ app.whenReady().then(async () => {
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('mods-catalog') === null && document.getElementById('mods-install') === null"), true, 'Catalog is removed');
     await window.webContents.executeJavaScript("document.getElementById('mods-import').click()"); await delay(600);
     assert.equal(installedMods.length, 1);
+    await fs.writeFile(path.join(output,'mods-glass.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.getElementById('shaders-open').click()");
+    await delay(450);
+    assert.equal(await window.webContents.executeJavaScript("document.getElementById('shaders-dialog').open"), true);
+    assert.equal(await window.webContents.executeJavaScript("getComputedStyle(document.getElementById('shaders-dialog'),'::backdrop').backdropFilter.includes('blur')"), true);
+    await fs.writeFile(path.join(output,'shaders-catalog.png'), (await window.webContents.capturePage()).toPNG());
+    await window.webContents.executeJavaScript("document.querySelector('.shader-card .secondary-button').click()");
+    await delay(150); assert.equal(shaderInstalled,true);
+    assert.equal(await window.webContents.executeJavaScript("document.querySelector('.shader-card .secondary-button').textContent"), 'Установлено');
+    await window.webContents.executeJavaScript("document.getElementById('shaders-more').click()"); await delay(100);
+    assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.shader-card').length"), 2);
+    await window.webContents.executeJavaScript("document.getElementById('shaders-close').click()"); await delay(300);
     assert.equal(savedSettings.useLatestRelease, false);
     assert.equal(savedSettings.version, '1.21.1'); assert.equal(savedSettings.loader, 'fabric');
     assert.ok(await window.webContents.executeJavaScript("[...document.querySelectorAll('#mods-installed-list .mod-cover')].some(i=>i.complete && i.naturalWidth>0)"), 'Local mod icon loads');
@@ -138,10 +162,11 @@ app.whenReady().then(async () => {
     await delay(250);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent"), '', 'Hidden journal does not update the DOM for each line');
     await window.webContents.executeJavaScript("document.querySelector('[data-page=logs]').click()");
-    await delay(150);
+    await delay(600);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent.includes('Buffered log sample 0') && document.getElementById('log').textContent.includes('Buffered log sample 299')"), true, 'Opening the journal displays buffered messages');
     await fs.writeFile(path.join(output, 'logs-pixel.png'), (await window.webContents.capturePage()).toPNG());
     await window.webContents.executeJavaScript("document.getElementById('clear-log').click()");
+    await fs.writeFile(path.join(output, 'logs-empty.png'), (await window.webContents.capturePage()).toPNG());
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent"), '');
     window.webContents.send('launcher:event', { kind: 'log', message: 'New message after clearing' });
     await delay(250);

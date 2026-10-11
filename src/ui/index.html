@@ -21,20 +21,20 @@
   <link rel="stylesheet" href="motion.css">
   <link rel="stylesheet" href="pixel-surfaces.css">
   <link rel="stylesheet" href="startup.css">
-  <link rel="stylesheet" href="asset-buttons.css">
+  <link rel="stylesheet" href="asset-buttons.css"><link rel="stylesheet" href="shaders.css"><link rel="stylesheet" href="mods-glass.css"><link rel="stylesheet" href="logs-glass.css">
 </head>
 <body class="booting">
   <div id="startup-overlay" role="status" aria-label="Загрузка лаунчера"><img class="startup-logo" src="assets/startup-logo.png" alt="KOPEYKA"></div>
   <header class="titlebar" aria-label="Панель окна">
     <div class="window-title"><span class="title-coin" aria-hidden="true"></span><span class="title-product"><b>KOPEYKA</b> Launcher</span></div>
-    <div class="window-controls">
+    <button id="launcher-update" class="update-pill" hidden>Обновить</button><div class="window-controls">
       <button id="window-minimize" class="window-button" aria-label="Свернуть" title="Свернуть"><span class="window-symbol minimize-symbol" aria-hidden="true"></span></button>
       <button id="window-maximize" class="window-button" aria-label="Развернуть" title="Развернуть"><span class="window-symbol maximize-symbol" aria-hidden="true"></span></button>
       <button id="window-close" class="window-button close-button" aria-label="Закрыть" title="Закрыть"><span class="window-symbol close-symbol" aria-hidden="true"></span></button>
     </div>
   </header>
   <div class="app-shell" inert>
-  <div class="shell-backdrop" aria-hidden="true"><img id="shell-art" src="assets/home-artwork.png" alt="" draggable="false"></div>
+  <div class="shell-backdrop" aria-hidden="true"><img id="shell-art" src="assets/home-artwork.avif" alt="" draggable="false"></div>
   <aside class="sidebar">
     <nav>
       <button class="nav-button active" data-page="home"><span class="nav-icon">▦</span>Minecraft Java<span class="nav-dot"></span></button>
@@ -43,7 +43,7 @@
   </aside>
   <main>
     <section id="home" class="page">
-        <div class="world-stage" id="world-stage"><div class="art-motion"><img id="home-art" src="assets/home-artwork.png" alt="Стив и Алекс в мире Minecraft с сакурами, лесом и рекой" draggable="false"><div class="art-light" aria-hidden="true"></div></div></div>
+        <div class="world-stage" id="world-stage"><div class="art-motion"><img id="home-art" src="assets/home-artwork.avif" alt="Стив и Алекс в мире Minecraft с сакурами, лесом и рекой" draggable="false"><div class="art-light" aria-hidden="true"></div></div></div>
       <div class="world-menu">
         <div class="world-heading"><img id="minecraft-logo" class="minecraft-logo" src="assets/minecraft-logo.png" alt="Minecraft" data-source="minecraft-bundled"><img id="java-logo" class="java-logo" src="assets/java-edition.png" alt="Java Edition" data-source="minecraft-bundled"></div>
         <div class="world-spacer" aria-hidden="true"></div>
@@ -58,18 +58,26 @@
         </div>
       </div>
     </section>
-    <section id="settings" class="page" hidden><div class="page-intro"><h2>Настройки</h2></div><div class="settings-card"><label class="setting-row"><span><strong>Память Minecraft</strong><small id="memory-hint">Оставь немного памяти для Windows.</small></span><select id="memory"><option value="2">2 ГБ</option><option value="3">3 ГБ</option><option value="4">4 ГБ</option><option value="6">6 ГБ</option><option value="8">8 ГБ</option><option value="12">12 ГБ</option><option value="16">16 ГБ</option></select></label><label class="setting-row"><span><strong>Экспериментальные версии</strong><small>Snapshots, pre-release и release candidate.</small></span><input id="snapshots" type="checkbox"></label><label class="setting-row"><span><strong>Исторические версии</strong><small>Показывать старые Alpha, Beta и ранние сборки.</small></span><input id="historical" type="checkbox"></label><div class="setting-row folder-row"><span><strong>Папка игры</strong><small id="game-path"></small></span><button class="secondary-button" id="choose-folder">Выбрать</button></div><div class="setting-row"><span><strong>Java</strong><small>Нужная версия скачивается автоматически при запуске.</small></span><span class="auto-label">АВТО</span></div></div><button class="pixel-button save-button" id="save">СОХРАНИТЬ</button><p id="settings-status" role="status" aria-live="polite"></p></section>
+    <section id="settings" class="page" hidden><div class="page-intro"><h2>Настройки</h2></div><div class="settings-card"><label class="setting-row"><span><strong>Память Minecraft</strong><small id="memory-hint">Оставь немного памяти для Windows.</small></span><select id="memory"><option value="2">2 ГБ</option><option value="3">3 ГБ</option><option value="4">4 ГБ</option><option value="6">6 ГБ</option><option value="8">8 ГБ</option><option value="12">12 ГБ</option><option value="16">16 ГБ</option></select></label><label class="setting-row"><span><strong>Экспериментальные версии</strong><small>Snapshots, pre-release и release candidate.</small></span><input id="snapshots" type="checkbox"></label><label class="setting-row"><span><strong>Исторические версии</strong><small>Показывать старые Alpha, Beta и ранние сборки.</small></span><input id="historical" type="checkbox"></label><div class="setting-row folder-row"><span><strong>Папка игры</strong><small id="game-path"></small></span><button class="secondary-button" id="choose-folder">Выбрать</button></div><div class="setting-row"><span><strong>Версии и обновления</strong><small id="update-status">Проверяем обновления…</small></span><div class="update-actions"><button id="refresh-versions" class="secondary-button">Обновить список</button><button id="check-updates" class="secondary-button">Проверить лаунчер</button></div></div><div class="setting-row"><span><strong>Время в Minecraft</strong><small>Общее время игры во всех версиях.</small></span><span class="auto-label" id="playtime">0 ч 0 мин</span></div></div><button class="pixel-button save-button" id="save">СОХРАНИТЬ</button><p id="settings-status" role="status" aria-live="polite"></p></section>
     <section id="mods" class="page" hidden>
-      <div class="mods-heading"><h2>Mods</h2><div class="mods-branding"><img id="mods-minecraft-logo" src="assets/minecraft-logo.png" alt="Minecraft" data-source="minecraft-bundled"><img id="mods-java-logo" src="assets/java-edition.png" alt="Java Edition" data-source="minecraft-bundled"></div><button id="mods-import" class="secondary-button">+ Выбрать .jar</button></div>
-      <div class="mods-profile"><label>ВЕРСИЯ<span id="mods-version"></span></label><label hidden>ЗАГРУЗЧИК<select id="loader"><option value="vanilla">Vanilla</option><option value="forge">Forge</option><option value="fabric">Fabric</option><option value="optifine">OptiFine</option></select></label><span id="loader-note">Загрузчик устанавливается при запуске игры.</span></div>
-      <div id="optifine-panel" class="optifine-panel" hidden><p>Скачай OptiFine для выбранной версии и выбери его JAR. Лаунчер установит отдельную сборку при запуске.</p><button id="optifine-site" class="secondary-button">Сайт OptiFine ↗</button><button id="optifine-import" class="secondary-button">Выбрать OptiFine .jar</button><span id="optifine-status" role="status"></span></div>
-      <div id="mods-installed" class="mods-scroll"><p class="mods-hint">Выбери скачанные .jar для своей версии игры и загрузчика.</p><div id="mods-installed-list" class="mods-results installed-grid"></div></div>
+      <div class="mods-heading"><div><h2>Mods</h2><p class="mods-caption">Моды и шейдеры для твоей сборки</p></div><div class="mods-branding"><img id="mods-minecraft-logo" src="assets/minecraft-logo.png" alt="Minecraft" data-source="minecraft-bundled"><img id="mods-java-logo" src="assets/java-edition.png" alt="Java Edition" data-source="minecraft-bundled"></div><button id="mods-import" class="secondary-button">+ Добавить JAR</button></div>
+      <div class="mods-profile"><label>ВЕРСИЯ<span id="mods-version"></span></label><label hidden>ЗАГРУЗЧИК<select id="loader"><option value="vanilla">Vanilla</option><option value="forge">Forge</option><option value="neoforge">NeoForge</option><option value="fabric">Fabric</option><option value="optifine">OptiFine</option></select></label><span id="loader-note">Загрузчик устанавливается при запуске игры.</span></div>
+      <div id="optifine-panel" class="optifine-panel" hidden><p>OptiFine скачивается и устанавливается автоматически при запуске Minecraft.</p><button id="optifine-site" class="secondary-button">Сайт OptiFine ↗</button><button id="optifine-import" class="secondary-button">Выбрать OptiFine .jar</button><span id="optifine-status" role="status"></span></div>
+      <div class="mods-tabs" aria-label="Разделы Mods"><button class="secondary-button active" type="button">Моды</button><button class="secondary-button" id="shaders-open" type="button">Шейдеры</button></div>
+      <div id="mods-installed" class="mods-scroll"><p class="mods-hint">Добавляй JAR для выбранной версии или открой каталог шейдеров.</p><div id="mods-installed-list" class="mods-results installed-grid"></div></div>
       <div class="mods-footer"><div class="mods-footer-info"><strong id="mods-selection">Установленные моды</strong><p id="mods-status" role="status" aria-live="polite"></p><progress id="mods-progress" max="100" hidden></progress></div></div>
     </section>
-    <section id="logs" class="page" hidden><div class="page-intro"><h2>Журнал запуска</h2></div><div class="log-toolbar"><span>ТЕКУЩАЯ СЕССИЯ</span><div><button class="secondary-button" id="export-log">Сохранить журнал</button> <button class="secondary-button" id="clear-log">Очистить экран</button></div></div><pre id="log" role="log"></pre></section>
+    <section id="logs" class="page" hidden><div class="page-intro"><h2>Журнал запуска</h2><p class="logs-caption">События Minecraft и детали последнего запуска.</p></div><div class="log-toolbar"><span class="log-session">Текущая сессия</span><div class="log-actions"><button class="secondary-button" id="export-log">Сохранить журнал</button> <button class="secondary-button" id="clear-log">Очистить экран</button></div></div><div class="log-surface"><pre id="log" role="log" aria-label="События запуска"></pre><div class="log-empty"><span class="log-empty-icon" aria-hidden="true"></span><strong>Здесь начнётся история запуска</strong><p>Запусти Minecraft — сообщения игры появятся здесь. При ошибке сохрани журнал.</p></div></div></section>
   </main>
   </div>
     <div id="launch-overlay" hidden role="status" aria-live="polite"><div class="launch-branding"><div class="loading-pixel" aria-hidden="true"></div><p>Загрузка игры<span class="loading-dots" aria-hidden="true">…</span></p><div class="loading-track" id="launch-indeterminate"><i></i></div><progress id="launch-progress" max="100" value="0" hidden></progress><small id="launch-detail"></small></div></div>
+  <dialog id="shaders-dialog" aria-labelledby="shaders-title">
+    <div class="shader-heading"><h2 id="shaders-title">Шейдеры</h2><button id="shaders-close" class="secondary-button" aria-label="Закрыть">✕</button></div>
+    <p class="shader-hint">Для выбранной версии Minecraft · Для работы нужен Iris или OptiFine. После установки выбери шейдер в настройках игры.</p>
+    <form id="shaders-search" class="mods-search"><input id="shaders-query" placeholder="Найти шейдер…" maxlength="120" aria-label="Поиск шейдеров"><button class="secondary-button">Найти</button></form>
+    <p id="shaders-status" role="status" aria-live="polite"></p><div id="shaders-results" class="mods-results"></div>
+    <button id="shaders-more" class="secondary-button" hidden>Показать ещё</button>
+  </dialog>
   <dialog id="profiles-dialog" aria-labelledby="profiles-title">
     <div class="profiles-heading"><h2 id="profiles-title">Профили</h2><button id="profiles-close" class="secondary-button" aria-label="Закрыть">✕</button></div>
     <p class="profiles-hint">Локальные профили · <span id="profiles-count"></span> / 15</p>

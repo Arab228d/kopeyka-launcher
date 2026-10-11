@@ -19,7 +19,7 @@ async function modrinth(route, request = fetch, timeout = 30000) {
   return response.json();
 }
 function requireLoader(config) {
-  if (!['forge', 'fabric'].includes(config.loader)) throw new Error('Для модов выбери Forge или Fabric.');
+  if (!['forge', 'fabric', 'neoforge'].includes(config.loader)) throw new Error('Для модов выбери Forge, NeoForge или Fabric.');
 }
 function compatible(version, config) {
   return version.game_versions?.includes(config.version) && version.loaders?.includes(config.loader) && !['server_only', 'dedicated_server_only'].includes(version.environment);
@@ -121,9 +121,10 @@ async function importMods(config, files) {
   for (const file of files) {
     const name = safeJar(path.basename(file));
     const archive = new AdmZip(file);
+    const neo = archive.getEntry('META-INF/neoforge.mods.toml');
     const fabric = archive.getEntry('fabric.mod.json'), forge = archive.getEntry('META-INF/mods.toml') || archive.getEntry('mcmod.info');
-    if (!fabric && !forge) throw new Error(`${name}: это не мод Forge/Fabric.`);
-    if (config.loader === 'forge' && !forge || config.loader === 'fabric' && !fabric) throw new Error(`${name}: мод для другого загрузчика.`);
+    if (!fabric && !forge && !neo) throw new Error(`${name}: это не мод Forge/NeoForge/Fabric.`);
+    if (config.loader === 'forge' && !forge || config.loader === 'fabric' && !fabric || config.loader === 'neoforge' && !neo && !forge) throw new Error(`${name}: мод для другого загрузчика.`);
     const bytes = await fs.readFile(file), destination = inside(root, `mods/${name}`);
     if (names.has(name.toLowerCase()) && !bytes.equals(names.get(name.toLowerCase()))) throw new Error(`Выбраны разные моды с одинаковым именем ${name}.`);
     names.set(name.toLowerCase(), bytes);
@@ -193,4 +194,4 @@ async function toggleMod(config, file) {
   try { await fs.access(inside(root, target)); throw new Error('Файл назначения уже существует.'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await fs.rename(inside(root, file), inside(root, target));
 }
-module.exports = { profileDirectory, searchMods, resolveMods, installMods, importMods, listMods, toggleMod, compatible, safeJar };
+module.exports = { modrinth, mediaUrl, profileDirectory, searchMods, resolveMods, installMods, importMods, listMods, toggleMod, compatible, safeJar };

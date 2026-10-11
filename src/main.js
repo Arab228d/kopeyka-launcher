@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell, screen } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell, screen, powerMonitor } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const os = require('node:os');
@@ -9,23 +9,40 @@ const { fetchJson, ensureJava, MANIFEST } = require('./engine');
 const { loadMinecraftTextures } = require('./minecraft-textures');
 const { prepareMinecraft } = require('./installer');
 const mods = require('./mods');
+const shaders = require('./shaders');
+const { fetchCatalog } = require('./loader-catalog');
+const updates = require('./updates');
 const { prepareLoader, importOptifine } = require('./loaders');
 const { launchMemory, launchFailure } = require('./launch-health');
 const { registerWindowControls } = require('./window-controls');
 const { createProgressSender } = require('./progress-events');
-let window, settings, manifest, busy = false, game;
-const defaults = () => ({ nickname: 'Player', memory: os.totalmem() < 8 * 1073741824 ? 2 : 4, version: '1.21.1', snapshots: false, historical: false, loader: 'vanilla', gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft') });
+const { storageDirectory, legacyDirectories, loadSettings, jsonWriter, migrateLegacyGame } = require('./persistence');
+const { Playtime } = require('./playtime');
+const { prepareGameData } = require('./game-data');
+const nativeFs = require('node:fs');
+const legacyData = legacyDirectories(os.homedir(), app.getPath('appData'), app.getPath('userData'));
+const stableData = storageDirectory(os.homedir());
+nativeFs.mkdirSync(stableData, { recursive: true });
+app.setPath('userData', stableData);
+let defaultGameDirectory = path.join(os.homedir(), '.kopeyka', 'minecraft');
+try { defaultGameDirectory = nativeFs.realpathSync.native(path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+let window, settings, manifest, busy = false, game, quitting = false;
+app.on('before-quit', () => { quitting = true; });
+const defaults = () => ({ nickname: 'Player', memory: os.totalmem() < 8 * 1073741824 ? 2 : 4, version: '1.21.1', snapshots: false, historical: false, loader: 'vanilla', gameDirectory: defaultGameDirectory });
 const configPath = () => path.join(app.getPath('userData'), 'settings.json');
+const writeSettings = jsonWriter(configPath());
+const playtime = new Playtime(path.join(stableData, 'playtime.json'));
 const send = createProgressSender(event => { if (window && !window.isDestroyed()) window.webContents.send('launcher:event', event); });
 async function save(input) {
   const next = validateSettings(input, defaults());
-  await fs.mkdir(app.getPath('userData'), { recursive: true });
-  await fs.writeFile(configPath() + '.tmp', JSON.stringify(next, null, 2));
-  await fs.rename(configPath() + '.tmp', configPath());
+  await fs.mkdir(next.gameDirectory, { recursive: true });
+  next.gameDirectory = nativeFs.realpathSync.native(next.gameDirectory);
+  await writeSettings(next);
   settings = next;
   return settings;
 }
-async function getManifest() {
+async function getManifest(refresh = false) {
+  if (refresh) manifest = null;
   if (manifest) return manifest;
   const cache = path.join(app.getPath('userData'), 'versions-cache.json');
   try {
@@ -38,23 +55,56 @@ async function getManifest() {
   }
   return manifest;
 }
+const primaryInstance = app.requestSingleInstanceLock();
+if (!primaryInstance) app.quit();
+app.on('second-instance', () => { if (window && !window.isDestroyed()) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
 app.whenReady().then(async () => {
+  if (!primaryInstance) return;
   const display = screen.getPrimaryDisplay().workAreaSize;
   window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, show: false, backgroundColor: '#000000', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   registerWindowControls(window);
+  window.on('close', event => { if (!quitting && (game || busy)) { event.preventDefault(); window.hide(); } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show(); });
   await window.loadFile(path.join(__dirname, 'ui', 'splash.html'));
   await fs.mkdir(app.getPath('userData'), { recursive: true });
-  try { settings = validateSettings(JSON.parse(await fs.readFile(configPath(), 'utf8')), defaults()); }
-  catch { settings = defaults(); }
-  ipcMain.handle('launcher:settings', () => ({ ...settings, totalMemory: Math.floor(os.totalmem() / 1073741824), appVersion: app.getVersion() }));
+  settings = await loadSettings(stableData, legacyData, defaults());
+  settings.gameDirectory = await migrateLegacyGame(settings.gameDirectory, os.homedir());
+  await save(settings);
+  await playtime.load();
+  const publishTime = () => send({ kind: 'playtime', seconds: playtime.total() });
+  const checkpoint = stop => playtime.checkpoint(stop).then(publishTime).catch(error => send({ kind: 'log', message: 'Не удалось сохранить время игры: ' + error.message }));
+  setInterval(() => { if (game) checkpoint(false); }, 30000).unref();
+  powerMonitor.on('suspend', () => { if (game) checkpoint(true); });
+  powerMonitor.on('resume', () => { if (game) playtime.start(); });
+  ipcMain.handle('launcher:settings', () => ({ ...settings, playtimeSeconds: playtime.total(), totalMemory: Math.floor(os.totalmem() / 1073741824), appVersion: app.getVersion() }));
   ipcMain.handle('launcher:textures', () => loadMinecraftTextures([settings.gameDirectory, defaults().gameDirectory, path.join(app.getPath('appData'), '.minecraft')], app.getPath('userData'), settings.version));
   ipcMain.handle('launcher:save', (_, input) => { if (busy) throw new Error('Дождитесь завершения запуска.'); return save(input); });
-  ipcMain.handle('launcher:versions', async () => {
-    const data = await getManifest();
+  ipcMain.handle('launcher:versions', async (_, refresh) => {
+    const data = await getManifest(refresh === true);
     return { latest: data.latest, versions: data.versions.map(({ id, type }) => ({ id, type })) };
+  });
+  let loaderCatalogTask, pendingUpdate;
+  ipcMain.handle('launcher:loader-catalog', (_, refresh) => {
+    if (!loaderCatalogTask || refresh === true) loaderCatalogTask = fetchCatalog(app.getPath('userData'));
+    return loaderCatalogTask;
+  });
+  ipcMain.handle('launcher:update-check', async () => {
+    pendingUpdate = await updates.checkUpdate(app.getVersion());
+    return pendingUpdate ? {version: pendingUpdate.version} : null;
+  });
+  ipcMain.handle('launcher:update-install', async () => {
+    if (!app.isPackaged) throw new Error('Обновление доступно в установленном лаунчере.');
+    if (busy || game) throw new Error('Закрой Minecraft и дождись завершения операции.');
+    if (!pendingUpdate) throw new Error('Сначала проверь обновления.');
+    busy = true;
+    try {
+      const installer = await updates.downloadUpdate(pendingUpdate, path.join(app.getPath('userData'), 'updates'), send);
+      await updates.installUpdate(installer, process.execPath, process.pid);
+      app.quit();
+      return {ok: true};
+    } finally { busy = false; }
   });
   const checkedProfile = input => validateSettings(input, defaults());
   const modAction = async action => {
@@ -62,6 +112,8 @@ app.whenReady().then(async () => {
     busy = true;
     try { return await action(); } finally { busy = false; }
   };
+  ipcMain.handle('launcher:shaders-search', (_, input, query, offset) => shaders.searchShaders(checkedProfile(input), query, offset));
+  ipcMain.handle('launcher:shaders-install', (_, input, project) => modAction(() => shaders.installShader(checkedProfile(input), project, event => send({ kind: 'mods-progress', ...event }))));
   ipcMain.handle('launcher:mods-list', (_, input) => mods.listMods(checkedProfile(input)));
   ipcMain.handle('launcher:mods-import', (_, input) => modAction(async () => {
     const result = await dialog.showOpenDialog(window, { title: 'Выбери моды', properties: ['openFile', 'multiSelections'], filters: [{ name: 'Minecraft mods', extensions: ['jar'] }] });
@@ -96,7 +148,7 @@ app.whenReady().then(async () => {
     send({ kind: 'state', state: 'preparing', message: 'Проверяем файлы…' });
     let logHandle;
     try {
-      const config = await save(input);
+      const config = await save({ ...input, useLatestRelease: false });
       logHandle = await fs.open(path.join(app.getPath('userData'), 'launcher.log'), 'w');
       const log = message => { const text = String(message); send({ kind: 'log', message: text }); logHandle.write(text + '\n').catch(() => {}); };
       const report = event => { send(event); if (event.kind === 'log' || event.message && event.percent === null) log(event.message); };
@@ -108,16 +160,19 @@ app.whenReady().then(async () => {
       const { metadata } = await prepareMinecraft(config.gameDirectory, version, report);
       const javaPath = await ensureJava(metadata.javaVersion?.majorVersion || 8, path.join(app.getPath('userData'), 'runtimes'), report, app.isPackaged ? path.join(process.resourcesPath, 'runtimes') : path.join(__dirname, '../build/runtimes'));
       const loader = await prepareLoader(config, metadata, javaPath, report);
+      report({ kind: 'progress', percent: null, message: 'Подготавливаем общие миры и настройки…' });
+      await prepareGameData(config.gameDirectory, loader.overrides.gameDirectory || config.gameDirectory, metadata, app.getPreferredSystemLanguages());
       await fs.mkdir(config.gameDirectory, { recursive: true });
       const memory = launchMemory(config.memory, os.totalmem(), os.freemem());
       log(`Память Java: ${memory} ГБ (выбрано ${config.memory} ГБ). Java: ${javaPath}`);
       const client = new GameClient();
-      let ready = false, startupFailed = false;
+      let ready = false, startupFailed = false, hiddenForGame = false;
       function closeWhenReady() {
-        if (ready && !startupFailed && game) {
-          log('Окно игры инициализировано. Закрываем лаунчер.');
+        if (ready && !startupFailed && game && !hiddenForGame) {
+          hiddenForGame = true;
+          log('Окно игры инициализировано. Лаунчер скрыт до завершения игры.');
+          send({ kind: 'state', state: 'running', message: 'Minecraft запущен.' });
           if (window && !window.isDestroyed()) window.hide();
-          app.quit();
         }
       }
       let launchError;
@@ -134,12 +189,20 @@ app.whenReady().then(async () => {
       });
       if (!child?.pid) throw launchError || new Error('Minecraft не запустился. Подробности в журнале.');
       game = child;
+      playtime.start();
       child.once('error', error => { startupFailed = true; send({ kind: 'error', message: error.message }); });
-      child.once('close', code => {
+      let finished = false;
+      const finishedGame = async code => {
+        if (finished) return;
+        finished = true;
         startupFailed = true;
         game = null; logHandle.close().catch(() => {});
+        await checkpoint(true);
         send(code === 0 ? { kind: 'state', state: 'idle', message: 'Игра завершена. Можно отправляться снова!' } : { kind: 'error', message: launchFailure(recentOutput, code) });
-      });
+        if (window && !window.isDestroyed()) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
+      };
+      child.once('close', finishedGame);
+      if (child.exitCode !== null) { await finishedGame(child.exitCode); return { ok: false }; }
       send({ kind: 'state', state: 'launching', message: 'Загрузка игры' });
       closeWhenReady();
       return { ok: true };
@@ -158,5 +221,5 @@ app.whenReady().then(async () => {
       app.quit();
     }, 3500);
   }
-});
+}).catch(error => { dialog.showErrorBox('KOPEYKA: не удалось открыть данные', error.message); app.quit(); });
 app.on('window-all-closed', () => app.quit());

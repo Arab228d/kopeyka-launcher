@@ -1,6 +1,6 @@
 {
   "name": "kopeyka-launcher",
-  "version": "0.2.2-beta",
+  "version": "0.1.0-beta",
   "description": "KOPEYKA Laucher — Minecraft Java launcher for Windows",
   "main": "src/main.js",
   "author": "KOPEYKA",
@@ -8,7 +8,7 @@
   "scripts": {
     "start": "electron .",
     "build:scene": "esbuild src/scene/scene.js --bundle --minify --format=iife --outfile=src/ui/scene.bundle.js",
-    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js",
+    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js test/shaders.test.js test/catalog-updates.test.js test/optifine.test.js test/persistence.test.js",
     "test:ui": "electron test/ui-smoke.cjs",
     "build": "npm run build:installer",
     "build:installer": "npm run prepare:runtimes && electron-builder --win nsis --x64",

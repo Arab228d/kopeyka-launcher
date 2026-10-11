@@ -2,6 +2,15 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { launchMemory, launchFailure } = require('../src/launch-health');
 const GB = 1073741824;
+test('resolves redirected Windows classpath entries before Java starts', () => {
+  const { canonicalClasspath } = require('../src/game-client');
+  const { delimiter } = require('node:path');
+  const args = ['-Xmx2G', '-cp', ['logical/a.jar', 'logical/b.jar'].join(delimiter), 'Main', '--gameDir', 'logical/game'];
+  const result = canonicalClasspath(args, p => p.replace('logical/', 'physical/'));
+  assert.equal(result[2], ['physical/a.jar', 'physical/b.jar'].join(delimiter));
+  assert.equal(result[5], 'logical/game');
+  assert.equal(args[2], ['logical/a.jar', 'logical/b.jar'].join(delimiter));
+});
 test('leaves RAM for Windows and caps requested Java heap using free memory', () => {
   assert.equal(launchMemory(4, 4 * GB, 3 * GB), 2);
   assert.equal(launchMemory(8, 16 * GB, 5 * GB), 4);

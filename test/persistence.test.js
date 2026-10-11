@@ -1,0 +1,80 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+const os = require('node:os');
+const { loadSettings, jsonWriter, migrateLegacyGame } = require('../src/persistence');
+const { shareWorlds, prepareGameData, systemLanguage } = require('../src/game-data');
+const { Playtime } = require('../src/playtime');
+async function fixture(t) {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-data-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  return root;
+}
+test('migrates existing settings once and recovers a corrupted primary from backup', async t => {
+  const root = await fixture(t), legacy = path.join(root, 'legacy'), stable = path.join(root, 'stable'), game = path.join(root, 'game');
+  await fs.mkdir(legacy); await fs.mkdir(game);
+  const defaults = { nickname: 'Player', memory: 4, version: '26.3', gameDirectory: game };
+  await fs.writeFile(path.join(legacy, 'settings.json'), JSON.stringify({ ...defaults, nickname: 'OldPlayer', version: '1.21.1', loader: 'fabric' }));
+  let loaded = await loadSettings(stable, [legacy], defaults);
+  assert.equal(loaded.nickname, 'OldPlayer'); assert.equal(loaded.version, '1.21.1'); assert.equal(loaded.useLatestRelease, false);
+  const write = jsonWriter(path.join(stable, 'settings.json'));
+  await write(loaded);
+  await Promise.all([write({ ...loaded, memory: 6 }), write({ ...loaded, memory: 8 })]);
+  assert.equal((await loadSettings(stable, [legacy], defaults)).memory, 8);
+  await fs.writeFile(path.join(stable, 'settings.json'), '{broken');
+  loaded = await loadSettings(stable, [legacy], defaults);
+  assert.equal(loaded.memory, 6); assert.equal(loaded.nickname, 'OldPlayer');
+});
+test('shares worlds across profiles without overwriting collisions or deleting originals', async t => {
+  const root = await fixture(t), profile = path.join(root, 'profiles', '1.21.1-fabric');
+  await fs.mkdir(path.join(root, 'saves', 'World'), { recursive: true });
+  await fs.mkdir(path.join(profile, 'saves', 'World'), { recursive: true });
+  await fs.writeFile(path.join(root, 'saves', 'World', 'level.dat'), 'vanilla');
+  await fs.writeFile(path.join(profile, 'saves', 'World', 'level.dat'), 'fabric');
+  await shareWorlds(root);
+  assert.equal(await fs.readFile(path.join(root, 'saves', 'World', 'level.dat'), 'utf8'), 'vanilla');
+  assert.equal(await fs.readFile(path.join(root, 'saves', 'World (1.21.1-fabric)', 'level.dat'), 'utf8'), 'fabric');
+  assert.equal(await fs.readFile(path.join(profile, 'saves-before-shared', 'World', 'level.dat'), 'utf8'), 'fabric');
+  const next = path.join(root, 'profiles', '26.3-fabric'); await fs.mkdir(next);
+  await shareWorlds(root);
+  assert.equal(await fs.readFile(path.join(next, 'saves', 'World', 'level.dat'), 'utf8'), 'vanilla');
+  await shareWorlds(root);
+  assert.equal((await fs.readdir(path.join(root, 'saves'))).length, 2);
+});
+test('uses system language for new games and carries user preferences into another version', async t => {
+  const root = await fixture(t), first = path.join(root, 'profiles', '1.21.1-fabric'), next = path.join(root, 'profiles', '26.3-fabric');
+  await fs.mkdir(path.join(root, 'assets', 'indexes'), { recursive: true });
+  await fs.writeFile(path.join(root, 'assets', 'indexes', 'test.json'), JSON.stringify({ objects: { 'minecraft/lang/ru_ru.json': {}, 'minecraft/lang/de_de.json': {} } }));
+  const metadata = { assetIndex: { id: 'test' } };
+  await prepareGameData(root, first, metadata, ['ru-RU']);
+  assert.equal(await fs.readFile(path.join(first, 'options.txt'), 'utf8'), 'lang:ru_ru\n');
+  await fs.writeFile(path.join(first, 'options.txt'), 'lang:de_de\nrenderDistance:12\n');
+  await prepareGameData(root, next, metadata, ['ru-RU']);
+  assert.equal(await fs.readFile(path.join(next, 'options.txt'), 'utf8'), 'lang:de_de\nrenderDistance:12\n');
+  assert.equal(systemLanguage(['zh-Hant-TW'], ['zh_cn', 'zh_tw', 'en_us']), 'zh_tw');
+  assert.equal(systemLanguage(['xx-XX'], ['ru_ru', 'en_us']), 'en_us');
+});
+test('playtime survives restart, preserves partial minutes and pauses between sessions', async t => {
+  const root = await fixture(t), file = path.join(root, 'time.json'); let now = 0;
+  const timer = new Playtime(file, () => now); await timer.load();
+  now = 100000; assert.equal(timer.total(), 0); timer.start();
+  now += 30500; await timer.checkpoint();
+  now += 30500; await timer.checkpoint(true); assert.equal(timer.total(), 61);
+  now += 120000; assert.equal(timer.total(), 61);
+  const restored = new Playtime(file, () => now); await restored.load(); assert.equal(restored.total(), 61);
+  restored.start(); now += 59000; await restored.checkpoint(true); assert.equal(restored.total(), 120);
+});
+test('copies legacy game storage once, retains originals and preference timestamps', async t => {
+  const home = await fixture(t), source = path.join(home, 'AppData', 'Roaming', 'KOPEYKA', 'minecraft');
+  await fs.mkdir(path.join(source, 'saves', 'World'), { recursive: true });
+  await fs.writeFile(path.join(source, 'saves', 'World', 'level.dat'), 'original world');
+  await fs.writeFile(path.join(source, 'options.txt'), 'lang:ru_ru\n');
+  const timestamp = new Date('2025-01-01T00:00:00Z'); await fs.utimes(path.join(source, 'options.txt'), timestamp, timestamp);
+  const target = await migrateLegacyGame(source, home);
+  assert.equal(target, path.join(home, '.kopeyka', 'minecraft'));
+  assert.equal(await fs.readFile(path.join(target, 'saves', 'World', 'level.dat'), 'utf8'), 'original world');
+  assert.equal(await fs.readFile(path.join(source, 'saves', 'World', 'level.dat'), 'utf8'), 'original world');
+  assert.equal((await fs.stat(path.join(target, 'options.txt'))).mtimeMs, timestamp.getTime());
+  assert.equal(await migrateLegacyGame(source, home), target);
+});

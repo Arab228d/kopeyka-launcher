@@ -1,5 +1,5 @@
 /* Clear surfaces keep the artwork visible behind the controls. */
-.app-shell { background: url('assets/home-artwork.png') left center / auto 110vh no-repeat; }
+.app-shell { background: url('assets/home-artwork.avif') left center / auto 110vh no-repeat; }
 .sidebar { padding-top: 26px; overflow: hidden; background: #141a2240; backdrop-filter: blur(12px) saturate(.6); border-left: 0; border-right: 1px solid #d7e0ec55; box-shadow: inset -1px 0 #ffffff12, 3px 0 18px #080c1433; }
 .sidebar nav { margin-top: 0; }
 .nav-button { background: linear-gradient(120deg, #26324470, #14203455); border-color: #8fa8ca45; box-shadow: inset 0 1px #d4e4ff22, 0 3px #050b1455; backdrop-filter: blur(5px); }

@@ -13,7 +13,7 @@ function validateSettings(input, defaults) {
   result.snapshots = Boolean(result.snapshots);
   result.historical = Boolean(result.historical);
   result.loader = result.loader || 'vanilla';
-  if (!['vanilla', 'forge', 'fabric', 'optifine'].includes(result.loader)) throw new Error('Выберите Vanilla, Forge, Fabric или OptiFine.');
+  if (!['vanilla', 'forge', 'fabric', 'neoforge', 'optifine'].includes(result.loader)) throw new Error('Выберите Vanilla, Forge, NeoForge, Fabric или OptiFine.');
   return Object.fromEntries(['nickname', 'profiles', 'memory', 'version', 'gameDirectory', 'snapshots', 'historical', 'loader', 'useLatestRelease'].map(k => [k, result[k]]));
 }
 module.exports = { validateSettings };

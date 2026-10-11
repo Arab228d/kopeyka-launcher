@@ -5,6 +5,8 @@ const AdmZip = require('adm-zip');
 const { fetchJson } = require('./engine');
 const { downloadFile, inside } = require('./installer');
 const { profileDirectory } = require('./mods');
+const { downloadOptifine } = require('./optifine');
+const { fetchCatalog } = require('./loader-catalog');
 const FORGE = 'https://maven.minecraftforge.net/net/minecraftforge/forge';
 async function loaderChoices(version) {
   const [forge, fabric] = await Promise.allSettled([
@@ -74,14 +76,24 @@ async function prepareLoader(config, metadata, java, send) {
       const zip = new AdmZip(installer);
       const profile = JSON.parse(zip.readAsText(zip.getEntry('version.json') ? 'version.json' : 'install_profile.json'));
       id = profile.id || profile.versionInfo?.id || id;
+    } else if (config.loader === 'neoforge') {
+      const catalog = await fetchCatalog(path.join(root, '.catalog'));
+      const version = catalog.neoforge?.[config.version];
+      if (!version) throw new Error('NeoForge ещё не выпущен для этой версии Minecraft.');
+      const url = 'https://maven.neoforged.net/releases/net/neoforged/neoforge/' + version + '/neoforge-' + version + '-installer.jar';
+      const checksum = await fetch(url + '.sha1', { signal: AbortSignal.timeout(30000) });
+      if (!checksum.ok) throw new Error('Не удалось проверить NeoForge.');
+      const installer = inside(root, 'installers/neoforge-' + version + '.jar');
+      await downloadFile({url, sha1: (await checksum.text()).trim().split(/\s/)[0]}, installer, (done,total) => send({kind:'progress',message:'Загрузка NeoForge…',percent:total ? done / total * 100 : null}));
+      await ensureLauncherProfiles(root);
+      await runJava(java, ['-jar', installer, '--installClient', root], root, send);
+      const zip = new AdmZip(installer);
+      id = JSON.parse(zip.readAsText('version.json')).id;
     } else if (config.loader === 'optifine') {
       const installer = path.join(gameDirectory, 'optifine-installer.jar');
-      try { await fs.access(installer); } catch { throw new Error('Открой Mods → OptiFine и выбери установщик JAR с optifine.net.'); }
+      try { await fs.access(installer); await fs.access(path.join(gameDirectory, 'optifine.json')); } catch { await importOptifine(config, await downloadOptifine(config, send)); }
       await ensureLauncherProfiles(root);
-      const helper = path.join(gameDirectory, 'KopeykaOptifineInstall.java');
-      await fs.writeFile(helper, 'import java.io.File; public class KopeykaOptifineInstall { public static void main(String[] args) throws Exception { Class.forName("optifine.Installer").getMethod("doInstall", File.class).invoke(null, new File(args[0])); } }');
-      const javac = path.join(path.dirname(java), 'javac.exe');
-      await runJava(javac, ['-encoding', 'UTF-8', '-d', gameDirectory, helper], gameDirectory, send, 60000);
+      await fs.copyFile(path.join(__dirname, 'optifine-helper', 'KopeykaOptifineInstall.class'), path.join(gameDirectory, 'KopeykaOptifineInstall.class'));
       await runJava(java, ['-Djava.awt.headless=true', '-cp', `${gameDirectory}${path.delimiter}${installer}`, 'KopeykaOptifineInstall', root], root, send);
       id = JSON.parse(await fs.readFile(path.join(gameDirectory, 'optifine.json'), 'utf8')).id;
       const installed = JSON.parse(await fs.readFile(inside(root, `versions/${id}/${id}.json`), 'utf8'));
@@ -99,7 +111,7 @@ async function prepareLoader(config, metadata, java, send) {
   const custom = `${id}-kopeyka`, directory = inside(root, `versions/${custom}`);
   await fs.mkdir(directory, { recursive: true });
   await fs.writeFile(inside(directory, `${custom}.json`), JSON.stringify(combined));
-  const customArgs = (profile.arguments?.jvm || []).filter(arg => typeof arg === 'string').map(arg => arg.replaceAll('${library_directory}', path.join(root, 'libraries')).replaceAll('${classpath_separator}', path.delimiter).replaceAll('${version_name}', id));
+  const customArgs = (profile.arguments?.jvm || []).filter(arg => typeof arg === 'string').map(arg => arg.replaceAll('${library_directory}', path.join(root, 'libraries')).replaceAll('${classpath_separator}', path.delimiter).replaceAll('${version_name}', config.loader === 'neoforge' ? config.version : id));
   if (customArgs.some(arg => /\$\{/.test(arg))) throw new Error('Загрузчик содержит неподдерживаемые аргументы Java.');
   return { version: { number: config.version, type: metadata.type, custom }, customArgs,
     overrides: { gameDirectory, versionJson: inside(root, `versions/${config.version}/${config.version}.json`), minecraftJar: inside(root, `versions/${config.version}/${config.version}.jar`), assetIndex: metadata.assetIndex.id } };

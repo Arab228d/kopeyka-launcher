@@ -1,8 +1,10 @@
 const $ = id => document.getElementById(id);
-let config, versions = [], busy = false, versionsReady = false, modsBusy = false;
+let config, versions = [], busy = false, versionsReady = false, modsBusy = false, loaderCatalog = null, updateAvailable = null, updating = false;
 const api = window.launcher;
 let logText = '', logQueue = [], logQueueSize = 0, logTimer;
 function page(name) {
+  document.body.classList.toggle('mods-view', name === 'mods');
+  document.body.classList.toggle('logs-view', name === 'logs');
   document.querySelectorAll('.page').forEach(el => el.hidden = el.id !== name);
   document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.page === name));
   if (name === 'mods' && config) { updateModProfile(); refreshInstalled(); }
@@ -10,13 +12,14 @@ function page(name) {
 }
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => page(el.dataset.page)));
 function status(message, error = false) { $('status').textContent = message; $('status').parentElement.hidden = !message; $('status').parentElement.classList.toggle('error', error); }
+function showPlaytime(seconds = 0) { const minutes = Math.floor(seconds / 60); $('playtime').textContent = `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`; }
 function current() { return { ...config, nickname: config.nickname, version: $('version').value.split('|')[0], memory: Number($('memory').value), snapshots: $('snapshots').checked, historical: $('historical').checked, loader: $('loader').value }; }
 function setBusy(value, running = false) {
   window.dispatchEvent(new CustomEvent('game-running', { detail: value || modsBusy }));
   busy = value; $('play').disabled = value || modsBusy || !versionsReady;
   $('play-text').textContent = running ? 'В игре' : value ? 'Ждём…' : 'Играть';
   $('play').setAttribute('aria-busy', String(value));
-  ['version', 'nickname', 'memory', 'snapshots', 'historical', 'choose-folder', 'save', 'loader', 'mods-import', 'optifine-import', 'profiles-open'].forEach(id => $(id).disabled = value || modsBusy);
+  ['version', 'nickname', 'memory', 'snapshots', 'historical', 'choose-folder', 'save', 'loader', 'mods-import', 'optifine-import', 'profiles-open', 'refresh-versions', 'check-updates', 'launcher-update'].forEach(id => $(id).disabled = value || modsBusy);
 }
 function launchTransition(active) {
     if (document.body.classList.contains('launch-transition') === active) return;
@@ -32,7 +35,7 @@ function renderVersions() {
   const labels = { snapshot: ' · Тестовая', old_alpha: ' · Alpha / Classic', old_beta: ' · Beta' };
   const options = available.flatMap(v => {
     const items = [new Option(`${v.id}${labels[v.type] || ''}`, v.id)];
-    if (v.type === 'release') for (const [loader, title] of [['fabric', 'Fabric'], ['forge', 'Forge'], ['optifine', 'OptiFine']]) items.push(new Option(`${v.id} ${title}`, `${v.id}|${loader}`));
+    if (v.type === 'release') for (const [loader, title] of [['fabric', 'Fabric'], ['forge', 'Forge'], ['neoforge', 'NeoForge'], ['optifine', 'OptiFine']]) if (!loaderCatalog || !loaderCatalog[loader] || loaderCatalog[loader][v.id]) items.push(new Option(`${v.id} ${title}`, `${v.id}|${loader}`));
     return items;
   });
   $('version').replaceChildren(...options);
@@ -56,10 +59,12 @@ function flushLogs() {
   el.scrollTop = el.scrollHeight;
 }
 api.onEvent(event => {
+  if (event.kind === 'playtime') showPlaytime(event.seconds);
   if (event.kind === 'mods-progress') {
-    modStatus(event.message); $('mods-progress').hidden = false;
+    modStatus(event.message); if ($('shaders-dialog').open) $('shaders-status').textContent = event.message + (event.percent === null ? '' : ' ' + Math.round(event.percent) + '%'); $('mods-progress').hidden = false;
     if (event.percent === null) $('mods-progress').removeAttribute('value'); else $('mods-progress').value = event.percent;
   }
+  if (event.kind === 'update-progress') { $('launcher-update').textContent = 'Обновление ' + event.percent + '%'; $('update-status').textContent = 'Загрузка обновления: ' + event.percent + '%'; }
   if (event.kind === 'log') log(event.message);
   if (event.kind === 'progress') {
       $('launch-detail').textContent = event.message || '';
@@ -74,7 +79,7 @@ api.onEvent(event => {
       if (event.state === 'preparing' || event.state === 'launching') launchTransition(true);
       if (event.state === 'preparing') $('launch-detail').textContent = event.message || 'Проверка файлов…';
       if (event.state === 'launching') { $('launch-detail').textContent = 'Запускаем Minecraft…'; $('launch-progress').hidden = true; $('launch-indeterminate').hidden = false; }
-    if (event.state === 'idle') launchTransition(false);
+    if (event.state === 'idle' || event.state === 'running') launchTransition(false);
     setBusy(event.state !== 'idle', event.state === 'running'); status(event.state === 'preparing' ? event.message : '');
     if (event.state !== 'preparing') { $('progress').hidden = true; $('percent').textContent = ''; }
   }
@@ -111,11 +116,13 @@ $('export-log').addEventListener('click', async () => { try { const file = await
 async function init() {
   try {
     config = await api.settings();
+    showPlaytime(config.playtimeSeconds);
     config.profiles ||= [config.nickname]; $('profile-name').textContent = config.nickname;
     $('memory').value = config.memory; $('snapshots').checked = config.snapshots; $('historical').checked = config.historical; $('loader').value = config.loader || 'vanilla'; $('game-path').textContent = config.gameDirectory;
     $('memory-hint').textContent = `На компьютере ${config.totalMemory} ГБ. Оставь минимум 1 ГБ для Windows.`;
     window.dispatchEvent(new Event('ui-settings-ready'));
-    const result = await api.versions();
+    const [result, catalog] = await Promise.all([api.versions(), api.loaderCatalog().catch(error => { log(error.message); return null; })]);
+    loaderCatalog = catalog;
     const latest = result.versions.find(v => v.id === result.latest?.release && v.type === 'release') || result.versions.find(v => v.type === 'release');
     versions = latest ? [latest, ...result.versions.filter(v => v.id !== latest.id)] : result.versions;
     if (latest && config.useLatestRelease !== false) { config.version = latest.id; config.loader = 'vanilla'; }
@@ -124,13 +131,14 @@ async function init() {
   } catch (error) { status(error.message, true); log(error.message); window.dispatchEvent(new Event('ui-settings-ready')); }
 }
 init();
+checkLauncherUpdate();
 function modStatus(message, error = false) { $('mods-status').textContent = message; $('mods-status').classList.toggle('error', error); }
 function updateModProfile() {
   const loader = $('loader').value;
   $('mods-version').textContent = $('version').selectedOptions[0]?.textContent || config.version;
-  $('optifine-panel').hidden = loader !== 'optifine';
-  $('loader-note').textContent = loader === 'vanilla' ? 'Для модов выбери Forge или Fabric.' : loader === 'optifine' ? 'Выбери JAR OptiFine ниже.' : 'Загрузчик устанавливается автоматически при запуске.';
-  $('mods-import').disabled = busy || modsBusy || !['forge', 'fabric'].includes(loader);
+  $('optifine-panel').hidden = true;
+  $('loader-note').textContent = loader === 'vanilla' ? 'Для JAR-модов выбери Forge, NeoForge или Fabric.' : 'Загрузчик скачивается автоматически при нажатии «Играть».';
+  $('mods-import').disabled = busy || modsBusy || !['forge', 'fabric', 'neoforge'].includes(loader);
   $('mods-selection').textContent = 'Установленные моды';
 }
 function modMedia(hit, position = 0) {
@@ -164,7 +172,13 @@ async function refreshInstalled() {
       toggle.addEventListener('click', () => modOperation(async () => { await api.toggleMod(current(), mod.file); await refreshInstalled(); return mod.enabled ? 'Мод выключен.' : 'Мод включён.'; }));
       const body = document.createElement('div'); body.className = 'mod-body'; body.append(title, toggle); card.append(modMedia(mod, index), body); return card;
     }));
-    if (!list.length) modStatus('В этой сборке пока нет модов.');
+    if (!list.length) {
+      const empty = document.createElement('div'); empty.className = 'mods-empty';
+      const icon = document.createElement('span'); icon.className = 'empty-mod-icon';
+      const title = document.createElement('strong'); title.textContent = 'Здесь будут твои моды';
+      const hint = document.createElement('p'); hint.textContent = ['forge','fabric','neoforge'].includes($('loader').value) ? 'Нажми «Добавить JAR», чтобы добавить моды в эту сборку.' : 'Выбери Forge, NeoForge или Fabric под кнопкой «Играть». Шейдеры доступны в соседней вкладке.';
+      empty.append(icon,title,hint); $('mods-installed-list').append(empty); modStatus('');
+    }
   } catch (error) { modStatus(error.message, true); }
 }
 async function modOperation(action) {
@@ -231,4 +245,79 @@ $('profiles-form').addEventListener('submit', e => {
   if (!editingProfile && config.profiles.length >= 15) { $('profiles-status').textContent = 'Можно добавить до 15 профилей.'; return; }
   const profiles = editingProfile ? config.profiles.map(n => n === editingProfile ? name : n) : [...config.profiles, name];
   saveProfiles(profiles, !editingProfile || config.nickname === editingProfile ? name : config.nickname);
+});
+
+let shaderOffset = 0, shaderTotal = 0, shaderRequest = 0, shaderSearchBusy = false;
+const installedShaders = new Set();
+async function loadShaders(append = false) {
+  const request = ++shaderRequest;
+  const profile = current();
+  if (!append) { shaderOffset = 0; $('shaders-results').replaceChildren(); }
+  shaderSearchBusy = true; $('shaders-more').disabled = true; $('shaders-status').textContent = 'Загружаем каталог…';
+  try {
+    const data = await api.searchShaders(profile, $('shaders-query').value, shaderOffset);
+    if (request !== shaderRequest) return;
+    shaderTotal = data.total; shaderOffset += data.hits.length;
+    for (const [i, hit] of data.hits.entries()) {
+      const card = document.createElement('article'); card.className = 'shader-card';
+      const body = document.createElement('div'); body.className = 'mod-body';
+      const title = document.createElement('strong'); title.textContent = hit.title;
+      const description = document.createElement('p'); description.textContent = hit.description;
+      const author = document.createElement('small'); author.textContent = hit.author + ' · ' + Number(hit.downloads).toLocaleString('ru-RU') + ' загрузок';
+      const button = document.createElement('button'); button.className = 'secondary-button'; button.type = 'button';
+      const key = profile.version + '|' + profile.loader + '|' + hit.id;
+      button.textContent = installedShaders.has(key) ? 'Установлено' : 'Установить'; button.disabled = installedShaders.has(key) || busy || modsBusy;
+      button.addEventListener('click', async () => {
+        if (busy || modsBusy) return;
+        modsBusy = true; setBusy(busy); document.querySelectorAll('.shader-card button').forEach(b => b.disabled = true); button.textContent = 'Скачиваем…';
+        try { await api.installShader(profile, hit.id); installedShaders.add(key); button.textContent = 'Установлено'; $('shaders-status').textContent = hit.title + ' установлен. Выбери его в настройках шейдеров Minecraft.'; }
+        catch (error) { button.textContent = 'Установить'; $('shaders-status').textContent = error.message; }
+        finally { modsBusy = false; setBusy(busy); updateModProfile(); $('mods-progress').hidden = true; document.querySelectorAll('.shader-card button.secondary-button').forEach(b => b.disabled = b.textContent === 'Установлено'); }
+      });
+      body.append(title, description, author, button); card.append(modMedia(hit,i), body); $('shaders-results').append(card);
+    }
+    $('shaders-status').textContent = shaderOffset ? 'Показано ' + shaderOffset + ' из ' + shaderTotal : 'Для этой версии шейдеры не найдены. Попробуй другую версию Minecraft.';
+    $('shaders-more').hidden = shaderOffset >= shaderTotal || !data.hits.length;
+  } catch (error) { if (request === shaderRequest) $('shaders-status').textContent = error.message; }
+  finally { if (request === shaderRequest) { shaderSearchBusy = false; $('shaders-more').disabled = false; } }
+}
+$('shaders-open').addEventListener('click', () => { if (!versionsReady || busy || modsBusy) return; $('shaders-dialog').showModal(); loadShaders(); });
+$('shaders-close').addEventListener('click', () => $('shaders-dialog').close());
+$('shaders-dialog').addEventListener('click', event => { if (event.target === $('shaders-dialog')) { const r = event.target.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) event.target.close(); } });
+$('shaders-search').addEventListener('submit', event => { event.preventDefault(); if (!modsBusy) loadShaders(); });
+$('shaders-more').addEventListener('click', () => { if (!shaderSearchBusy) loadShaders(true); });
+
+async function checkLauncherUpdate() {
+  if (updating) return;
+  $('check-updates').disabled = true;
+  try {
+    updateAvailable = await api.checkUpdate();
+    $('launcher-update').hidden = !updateAvailable;
+    $('launcher-update').textContent = updateAvailable ? 'Обновить до ' + updateAvailable.version : 'Обновить';
+    $('check-updates').textContent = updateAvailable ? 'Обновить лаунчер' : 'Проверить лаунчер';
+    $('update-status').textContent = updateAvailable ? 'Доступна версия ' + updateAvailable.version : 'Установлена актуальная версия лаунчера.';
+  } catch (error) { $('update-status').textContent = error.message; }
+  finally { $('check-updates').disabled = busy || modsBusy; }
+}
+async function updateLauncher() {
+  if (busy || modsBusy || updating || !updateAvailable) return;
+  updating = true; setBusy(true);
+  $('launcher-update').textContent = 'Скачиваем…'; $('update-status').textContent = 'Скачиваем обновление. Лаунчер перезапустится после установки.';
+  try { await api.installUpdate(); }
+  catch (error) { updating = false; setBusy(false); $('launcher-update').textContent = 'Обновить'; $('update-status').textContent = error.message; }
+}
+$('launcher-update').addEventListener('click', updateLauncher);
+$('check-updates').addEventListener('click', () => updateAvailable ? updateLauncher() : checkLauncherUpdate());
+$('refresh-versions').addEventListener('click', async () => {
+  if (busy || modsBusy) return;
+  $('refresh-versions').disabled = true;
+  try {
+    const [result,catalog] = await Promise.all([api.versions(true), api.loaderCatalog(true)]);
+    loaderCatalog = catalog;
+    const latest = result.versions.find(v => v.id === result.latest?.release && v.type === 'release');
+    versions = latest ? [latest, ...result.versions.filter(v => v.id !== latest.id)] : result.versions;
+    renderVersions(); updateModProfile();
+    $('update-status').textContent = catalog.errors.length ? 'Список обновлён. Часть загрузчиков показана из кеша.' : 'Версии Minecraft и загрузчиков обновлены.';
+  } catch (error) { $('update-status').textContent = error.message; }
+  finally { $('refresh-versions').disabled = false; }
 });
