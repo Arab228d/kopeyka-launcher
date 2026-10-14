@@ -40,5 +40,8 @@
 .launch-actions .launch-button:hover:not(:disabled), .launch-actions .launch-button:focus-visible { border-image-source: url('assets/button-frames/green-hover.svg'); }
 .launch-actions .launch-button:disabled { border-image-source: url('assets/button-frames/green-disabled.svg'); color: #78968e; opacity: 1; text-shadow: 2px 2px #173c30; }
 .launch-button:disabled .pixel-arrow { background: #78968e; filter: none; }
-.launch-glow { filter: drop-shadow(0 0 4px #58ff3155); }
+.launch-actions .launch-button { filter: saturate(.94) brightness(.84); text-shadow: 2px 2px #102f1b; transition: filter .2s ease, transform .1s; }
+.launch-actions .launch-button:hover:not(:disabled), .launch-actions .launch-button:focus-visible { filter: saturate(1.1) brightness(1.08); text-shadow: 2px 2px #158523; }
+.launch-glow { filter: none; transition: filter .2s ease; }
+.launch-glow:has(.launch-button:hover:not(:disabled)), .launch-glow:has(.launch-button:focus-visible) { filter: drop-shadow(0 0 5px #7cff44aa) drop-shadow(0 0 15px #31ef2c66); }
 @media (max-width: 1100px) { .launch-side { gap: 6px; font-size: 8px; } .action-icon { width: 18px; height: 18px; } .nav-button { gap: 10px; padding-left: 7px; padding-right: 7px; } }

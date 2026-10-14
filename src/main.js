@@ -63,7 +63,7 @@ app.on('second-instance', () => { if (window && !window.isDestroyed()) { if (win
 app.whenReady().then(async () => {
   if (!primaryInstance) return;
   const display = screen.getPrimaryDisplay().workAreaSize;
-  window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, show: false, backgroundColor: '#000000', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, show: false, icon: path.join(__dirname, 'ui', 'assets', 'startup-logo.png'), backgroundColor: '#000000', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   registerWindowControls(window);
   window.on('close', event => { if (!quitting && (game || busy)) { event.preventDefault(); window.hide(); } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
