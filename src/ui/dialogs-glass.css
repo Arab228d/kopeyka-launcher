@@ -23,6 +23,16 @@
 #news-dialog[open] { opacity: 1; transform: none; }
 @starting-style { #news-dialog[open] { opacity: 0; transform: translateY(10px) scale(.98); } }
 @media(prefers-reduced-motion:reduce) { #news-dialog { transition: none; transform: none; } }
+
+/* Release notes use the same compact pixel frame as the launcher controls. */
+#news-dialog { width:min(700px,88vw); padding:24px 26px 22px; border:10px solid transparent; border-image:var(--frame-normal) 12 fill / 14px / 0 stretch; border-radius:0; background:none; backdrop-filter:none; box-shadow:0 16px 48px #050b12aa; }
+#news-dialog .profiles-heading { align-items:center; border-bottom:2px solid #8ca0b622; padding-bottom:14px; }
+#news-dialog .news-eyebrow { font:8px/1.5 PlayPixel,monospace; color:#e1bd62; letter-spacing:1px; margin:0 0 8px; }
+#news-dialog h2 { font:20px/1.5 PlayPixel,monospace; color:#eef5fb; text-shadow:2px 2px #10202c; }
+#news-version { font:10px PlayPixel,monospace; color:#b9c8d5; margin:15px 0; }
+#news-body { max-height:46vh; margin:0 0 20px; padding:18px; border:8px solid transparent; border-image:var(--frame-normal) 12 fill / 10px / 0 stretch; border-radius:0; background:none; color:#dbe7ef; font:12px/1.9 'Segoe UI',sans-serif; }
+#news-dialog #news-done { border-image-source:url('assets/button-frames/green.svg'); color:#efffe8; min-height:46px; padding:7px 18px; }
+#news-dialog #news-done:hover { border-image-source:url('assets/button-frames/green-hover.svg'); }
 /* Profile editor: a compact player roster and a single-line create action. */
 #profiles-dialog { width: min(620px,92vw); padding: 26px; background: linear-gradient(135deg,#34495caf,#142331d4); border-radius: 12px; }
 #profiles-dialog .profiles-heading { padding-bottom: 4px; }
