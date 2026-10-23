@@ -1,5 +1,6 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
+const { randomUUID } = require('node:crypto');
 const SOURCES = {
   forge: 'https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json',
   fabric: 'https://meta.fabricmc.net/v2/versions/game',
@@ -33,7 +34,10 @@ function parseCatalog(kind, body) {
 async function fetchCatalog(cacheDirectory, request = fetch) {
   const file = path.join(cacheDirectory, 'loader-catalog.json');
   let cached = {};
-  try { cached = JSON.parse(await fs.readFile(file, 'utf8')); } catch {}
+  try {
+    const value = JSON.parse(await fs.readFile(file, 'utf8'));
+    if (value && typeof value === 'object' && !Array.isArray(value)) cached = value;
+  } catch {}
   const catalog = { checkedAt: new Date().toISOString(), errors: [] };
   await Promise.all(Object.entries(SOURCES).map(async ([kind,url]) => {
     try {
@@ -42,10 +46,19 @@ async function fetchCatalog(cacheDirectory, request = fetch) {
       const parsed = parseCatalog(kind, await response.text());
       if (!Object.keys(parsed).length) throw new Error('Пустой каталог');
       catalog[kind] = parsed;
-    } catch { catalog[kind] = cached[kind] || null; catalog.errors.push(kind); }
+    } catch {
+      const previous = cached[kind];
+      catalog[kind] = previous && typeof previous === 'object' && !Array.isArray(previous) ? previous : null;
+      catalog.errors.push(kind);
+    }
   }));
-  await fs.mkdir(cacheDirectory, { recursive: true });
-  await fs.writeFile(file, JSON.stringify(catalog)).catch(() => {});
+  const partial = file + '.' + randomUUID() + '.part';
+  try {
+    await fs.mkdir(cacheDirectory, { recursive: true });
+    await fs.writeFile(partial, JSON.stringify(catalog));
+    await fs.rename(partial, file);
+  } catch { /* The network catalog stays usable if the disk cache is unwritable. */ }
+  finally { await fs.unlink(partial).catch(() => {}); }
   return catalog;
 }
 module.exports = { fetchCatalog, parseCatalog, neoMinecraft };

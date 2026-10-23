@@ -6,4 +6,36 @@ test('catalog refresh retains cached loader availability when servers fail',asyn
 const bytes=Buffer.from('verified installer');
 const asset={name:'KOPEYKA-Laucher-Setup-0.4.0.exe',state:'uploaded',size:bytes.length,digest:'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex'),browser_download_url:'https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.4.0/KOPEYKA-Laucher-Setup-0.4.0.exe'};
 test('update check compares versions and rejects drafts, older builds and foreign installers',async()=>{assert.equal(newer('v0.3','0.2.2-beta'),true);assert.equal(newer('0.3.0-beta','0.3.0'),false);const update=await checkUpdate('0.3.0',async()=>Response.json([{tag_name:'v0.2.2-beta',assets:[asset]},{tag_name:'v9.0.0',draft:true,assets:[asset]},{tag_name:'v1.0.0',prerelease:true,assets:[asset]},{tag_name:'v0.5.0',assets:[{...asset,browser_download_url:'https://evil.example/setup.exe'}]},{tag_name:'v0.4.0',assets:[asset]}]));assert.equal(update.version,'0.4.0');});
+test('orders beta and release candidate updates using their complete prerelease identifiers', async () => {
+  assert.equal(newer('0.4.0-beta.10', '0.4.0-beta.2'), true);
+  assert.equal(newer('0.4.0-beta.2', '0.4.0-beta.10'), false);
+  assert.equal(newer('0.4.0-rc.1', '0.4.0-beta.10'), true);
+  assert.equal(newer('0.4.0-beta.1', '0.4.0-beta'), true);
+  assert.equal(newer('0.4.0-beta', '0.4.0-beta.1'), false);
+  assert.equal(newer('0.4.0-beta.2+build.5', '0.4.0-beta.2+build.1'), false);
+  assert.equal(newer('0.4.0', '0.4.0-rc.1'), true);
+  const update = await checkUpdate('0.4.0-beta.1', async () => Response.json([
+    { tag_name: 'v0.4.0-beta.2', prerelease: true, assets: [asset] },
+    { tag_name: 'v0.4.0-beta.10', prerelease: true, assets: [asset] }
+  ]));
+  assert.equal(update.version, '0.4.0-beta.10');
+});
+test('invalid update metadata cannot reach a download request', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-update-invalid-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await assert.rejects(downloadUpdate(null, root, () => {}, async () => { throw new Error('must not request'); }), /проверенного установщика/);
+  assert.equal(await checkUpdate('0.3.0', async () => Response.json([null, { tag_name: 'v0.4.0', assets: [null] }])), null);
+  await assert.rejects(checkUpdate('0.3.0', async () => Response.json({ message: 'invalid' })), /некорректный список/);
+});
+test('corrupt loader cache and unavailable cache directory do not block a valid catalog', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-catalog-corrupt-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  await fs.writeFile(path.join(root, 'loader-catalog.json'), 'null');
+  const offline = await fetchCatalog(root, async () => { throw new Error('offline'); });
+  assert.equal(offline.errors.length, 4); assert.equal(offline.fabric, null);
+  const blocked = path.join(root, 'not-a-directory'); await fs.writeFile(blocked, 'fixture');
+  const request = async url => new Response(url.includes('fabricmc.net') ? '[{"version":"1.21.1"}]' : url.includes('promotions') ? '{"promos":{"1.21.1-latest":"52.0.16"}}' : url.includes('neoforged.net') ? '<version>21.1.12</version>' : 'adloadx?f=OptiFine_1.21.1_HD_U_J1.jar');
+  const catalog = await fetchCatalog(blocked, request);
+  assert.equal(catalog.fabric['1.21.1'], true); assert.equal(catalog.errors.length, 0);
+});
 test('update download verifies SHA256 and never commits corrupted installer',async t=>{const root=await fs.mkdtemp(path.join(os.tmpdir(),'kopeyka-update-'));t.after(()=>fs.rm(root,{recursive:true,force:true}));const file=await downloadUpdate({asset},root,()=>{},async()=>new Response(bytes));assert.deepEqual(await fs.readFile(file),bytes);await fs.unlink(file);await assert.rejects(downloadUpdate({asset},root,()=>{},async()=>new Response(Buffer.alloc(bytes.length))),/контрольной суммы/);assert.deepEqual(await fs.readdir(root),[]);const script=updateScript("C:\\test's\\setup.exe",'C:\\Launcher.exe',123);assert.ok(script.includes("test''s"));assert.ok(script.includes('Wait-Process -Id 123'));assert.ok(script.includes("-ArgumentList '/S'"));});

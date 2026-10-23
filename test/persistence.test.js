@@ -26,6 +26,28 @@ test('migrates existing settings once and recovers a corrupted primary from back
   loaded = await loadSettings(stable, [legacy], defaults);
   assert.equal(loaded.memory, 6); assert.equal(loaded.nickname, 'OldPlayer');
 });
+
+test('preserves an explicit automatic-version preference across restarts', async t => {
+  const root = await fixture(t), game = path.join(root, 'game');
+  await fs.mkdir(game);
+  const defaults = { nickname: 'Player', memory: 4, version: '1.21.1', gameDirectory: game };
+  const write = jsonWriter(path.join(root, 'settings.json'));
+  for (const useLatestRelease of [true, false]) {
+    await write({ ...defaults, useLatestRelease });
+    assert.equal((await loadSettings(root, [], defaults)).useLatestRelease, useLatestRelease);
+  }
+});
+
+test('rejects non-object settings and restores a valid backup instead of resetting preferences', async t => {
+  const root = await fixture(t), game = path.join(root, 'game');
+  await fs.mkdir(game);
+  const defaults = { nickname: 'Player', memory: 4, version: '1.21.1', gameDirectory: game };
+  await fs.writeFile(path.join(root, 'settings.json.bak'), JSON.stringify({ ...defaults, memory: 8 }));
+  for (const invalid of ['[]', 'null', '42', '"broken"']) {
+    await fs.writeFile(path.join(root, 'settings.json'), invalid);
+    assert.equal((await loadSettings(root, [], defaults)).memory, 8);
+  }
+});
 test('shares worlds across profiles without overwriting collisions or deleting originals', async t => {
   const root = await fixture(t), profile = path.join(root, 'profiles', '1.21.1-fabric');
   await fs.mkdir(path.join(root, 'saves', 'World'), { recursive: true });

@@ -4,8 +4,19 @@ const {jsonWriter} = require('./persistence');
 class ReleaseNews {
   constructor(directory, version, notes, existingInstall = false) { this.file = path.join(directory, 'release-news.json'); this.version = version; this.existingInstall = existingInstall; this.notes = notes; this.write = jsonWriter(this.file); }
   async load() {
-    try { this.state = JSON.parse(await fs.readFile(this.file, 'utf8')); }
-    catch (e) { if (e.code !== 'ENOENT') throw e; this.state = {seen: this.existingInstall ? null : this.version}; await this.write(this.state); }
+    for (const suffix of ['', '.bak']) {
+      try {
+        const state = JSON.parse(await fs.readFile(this.file + suffix, 'utf8'));
+        if (!state || typeof state !== 'object' || Array.isArray(state) || !(state.seen === null || typeof state.seen === 'string')) continue;
+        this.state = { seen: state.seen };
+        if (state.pending && typeof state.pending.version === 'string' && typeof state.pending.body === 'string') this.state.pending = { version: state.pending.version, body: state.pending.body.slice(0, 16000) };
+        // Keep a valid backup available even if the last write was interrupted.
+        if (suffix) await this.write(this.state);
+        return;
+      } catch (error) { if (!(error instanceof SyntaxError) && error.code !== 'ENOENT') throw error; }
+    }
+    this.state = {seen: this.existingInstall ? null : this.version};
+    await this.write(this.state);
   }
   current() {
     const pending = this.state.pending;

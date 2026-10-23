@@ -1,5 +1,6 @@
 const path = require('node:path');
 function validateSettings(input, defaults) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('Настройки должны быть объектом.');
   const result = { ...defaults, ...input };
   if (!/^[A-Za-z0-9_]{3,16}$/.test(result.nickname)) throw new Error('Ник: от 3 до 16 латинских букв, цифр или символов _');
   result.profiles = input.profiles ?? [result.nickname];

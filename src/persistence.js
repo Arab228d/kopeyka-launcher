@@ -25,8 +25,11 @@ async function loadSettings(directory, legacy, defaults) {
   candidates.sort((a, b) => Number(b.local) - Number(a.local) || (a.local ? Number(a.backup) - Number(b.backup) : b.time - a.time));
   for (const candidate of candidates) {
     try {
-      const value = validateSettings(JSON.parse(await fsp.readFile(candidate.file, 'utf8')), defaults);
-      value.useLatestRelease = false;
+      const saved = JSON.parse(await fsp.readFile(candidate.file, 'utf8'));
+      const value = validateSettings(saved, defaults);
+      // Old installations had no automatic-version preference. Preserve their
+      // chosen version, but retain an explicit choice made by newer versions.
+      if (!Object.hasOwn(saved, 'useLatestRelease')) value.useLatestRelease = false;
       // Keep existing game files in place and persist the physical path.
       try { value.gameDirectory = fs.realpathSync.native(value.gameDirectory); }
       catch (error) { if (error.code !== 'ENOENT') throw error; }

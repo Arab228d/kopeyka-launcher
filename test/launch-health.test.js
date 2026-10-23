@@ -22,6 +22,18 @@ test('distinguishes Java memory and graphics failures from unexplained exits', (
   assert.match(launchFailure('UnsupportedClassVersionError: version 65', 1), /Версия Java/);
   assert.match(launchFailure('GLFW error 65542', 1), /OpenGL/);
   assert.match(launchFailure('unknown', -1), /кодом -1/);
+  assert.match(launchFailure('unknown', null, 'SIGTERM'), /сигналом SIGTERM/);
+});
+
+test('game output preserves UTF-8 characters split between pipe chunks', async () => {
+  const { GameClient } = require('../src/game-client');
+  const client = new GameClient();
+  client.options = { javaPath: process.execPath, root: process.cwd(), overrides: {} };
+  let output = '';
+  client.on('data', text => { output += text; });
+  const child = client.startMinecraft(['-e', "const b = Buffer.from('Привет!'); process.stdout.write(b.subarray(0, 1)); setTimeout(() => process.stdout.end(b.subarray(1)), 40)"]);
+  await new Promise((resolve, reject) => { client.once('error', reject); child.once('close', resolve); });
+  assert.equal(output, 'Привет!');
 });
 test('waits for client initialization rather than merely Java starting', () => {
   const { gameReady } = require('../src/game-client');

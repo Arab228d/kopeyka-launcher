@@ -2,9 +2,9 @@
 
 Лаунчер Minecraft Java для Windows с пиксельными кнопками, прозрачными панелями и живым фоном, который реагирует на движение мыши.
 
-## Скачать 0.1.2 Beta
+## Скачать 0.1.4 Beta
 
-[Скачать EXE-установщик](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.1.2-beta/KOPEYKA-Laucher-Setup-0.1.2-beta.exe) · [Страница выпуска](https://github.com/Arab228d/kopeyka-launcher/releases/tag/v0.1.2-beta)
+[Скачать EXE-установщик](https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.1.4-beta/KOPEYKA-Laucher-Setup-0.1.4-beta.exe) · [Страница выпуска](https://github.com/Arab228d/kopeyka-launcher/releases/tag/v0.1.4-beta)
 
 Установщик для Windows x64 создаёт ярлыки на рабочем столе и в меню «Пуск». Electron и Java 8, 16, 17, 21 и 25 включены: отдельно устанавливать Node.js или Java не нужно. Minecraft скачивается при первом запуске, поэтому нужен интернет.
 

@@ -21,8 +21,9 @@ class GameClient extends Client {
       cwd: this.options.overrides.cwd || this.options.root,
       detached: true, windowsHide: true
     });
-    child.stdout.on('data', bytes => this.emit('data', bytes.toString('utf8')));
-    child.stderr.on('data', bytes => this.emit('data', bytes.toString('utf8')));
+    // Stream decoders retain incomplete UTF-8 sequences between data chunks.
+    child.stdout.setEncoding('utf8').on('data', text => this.emit('data', text));
+    child.stderr.setEncoding('utf8').on('data', text => this.emit('data', text));
     child.on('error', error => this.emit('error', error));
     child.on('close', code => this.emit('close', code));
     child.unref();

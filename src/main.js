@@ -28,8 +28,8 @@ nativeFs.mkdirSync(stableData, { recursive: true });
 app.setPath('userData', stableData);
 let defaultGameDirectory = path.join(os.homedir(), '.kopeyka', 'minecraft');
 try { defaultGameDirectory = nativeFs.realpathSync.native(path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft')); } catch (error) { if (error.code !== 'ENOENT') throw error; }
-let window, settings, manifest, busy = false, game, quitting = false;
-app.on('before-quit', () => { quitting = true; });
+let window, settings, manifest, manifestTask, busy = false, game, quitting = false, hiddenForOperation = false, playtimeLoaded = false;
+let settingsQueue = Promise.resolve();
 const defaults = () => ({ nickname: 'Player', memory: os.totalmem() < 8 * 1073741824 ? 2 : 4, version: '1.21.1', snapshots: false, historical: false, loader: 'vanilla', gameDirectory: defaultGameDirectory });
 const configPath = () => path.join(app.getPath('userData'), 'settings.json');
 const writeSettings = jsonWriter(configPath());
@@ -37,27 +37,61 @@ const playtime = new Playtime(path.join(stableData, 'playtime.json'));
 const send = createProgressSender(event => { if (window && !window.isDestroyed()) window.webContents.send('launcher:event', event); });
 async function save(input) {
   const next = validateSettings(input, defaults());
-  await fs.mkdir(next.gameDirectory, { recursive: true });
-  next.gameDirectory = nativeFs.realpathSync.native(next.gameDirectory);
-  await writeSettings(next);
-  settings = next;
-  return settings;
+  // Serialize the whole operation: directory creation can finish out of order
+  // even though the JSON writer itself already serializes its writes.
+  const task = settingsQueue.catch(() => {}).then(async () => {
+    await fs.mkdir(next.gameDirectory, { recursive: true });
+    next.gameDirectory = nativeFs.realpathSync.native(next.gameDirectory);
+    await writeSettings(next);
+    settings = next;
+    return settings;
+  });
+  settingsQueue = task;
+  return task;
 }
 async function getManifest(refresh = false) {
-  if (refresh) manifest = null;
-  if (manifest) return manifest;
-  const cache = path.join(app.getPath('userData'), 'versions-cache.json');
-  try {
-    manifest = await fetchJson(MANIFEST);
-    await fs.writeFile(cache, JSON.stringify(manifest));
-  } catch (error) {
-    try { manifest = JSON.parse(await fs.readFile(cache, 'utf8')); }
-    catch { throw new Error('Не удалось получить версии Minecraft. Проверьте подключение к интернету.'); }
-    send({ kind: 'log', message: 'Используется сохранённый список версий: сервер недоступен.' });
-  }
-  return manifest;
+  if (!refresh && manifest) return manifest;
+  if (!manifestTask) manifestTask = (async () => {
+    const cache = path.join(app.getPath('userData'), 'versions-cache.json');
+    try {
+      const fresh = await fetchJson(MANIFEST);
+      if (!Array.isArray(fresh?.versions) || !fresh.versions.length) throw new Error('Некорректный список версий Minecraft.');
+      manifest = fresh;
+    } catch (error) {
+      if (!manifest) {
+        try {
+          const cached = JSON.parse(await fs.readFile(cache, 'utf8'));
+          if (!Array.isArray(cached?.versions) || !cached.versions.length) throw new Error('Некорректный список версий Minecraft.');
+          manifest = cached;
+        } catch { throw new Error('Не удалось получить версии Minecraft. Проверьте подключение к интернету.'); }
+      }
+      send({ kind: 'log', message: 'Используется сохранённый список версий: сервер недоступен.' });
+      return manifest;
+    }
+    try { await fs.writeFile(cache, JSON.stringify(manifest)); }
+    catch (error) { send({ kind: 'log', message: 'Не удалось сохранить список версий: ' + error.message }); }
+    return manifest;
+  })().finally(() => { manifestTask = null; });
+  return manifestTask;
+}
+function showWindow() {
+  if (quitting || !window || window.isDestroyed()) return;
+  hiddenForOperation = false;
+  if (window.isMinimized()) window.restore();
+  window.show(); window.focus();
+}
+function finishOperation() {
+  busy = false;
+  if (hiddenForOperation && !game) showWindow();
 }
 const primaryInstance = app.requestSingleInstanceLock();
+let shutdown;
+app.on('before-quit', event => {
+  quitting = true;
+  if (!primaryInstance || shutdown === 'done') return;
+  event.preventDefault();
+  if (!shutdown) shutdown = Promise.allSettled([settingsQueue, playtimeLoaded ? playtime.checkpoint(true) : Promise.resolve()]).then(() => { shutdown = 'done'; app.quit(); });
+});
 if (!primaryInstance) app.quit();
 app.on('second-instance', () => { if (window && !window.isDestroyed()) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); } });
 app.whenReady().then(async () => {
@@ -65,7 +99,7 @@ app.whenReady().then(async () => {
   const display = screen.getPrimaryDisplay().workAreaSize;
   window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, show: false, icon: path.join(__dirname, 'ui', 'assets', 'startup-logo.png'), backgroundColor: '#000000', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
   registerWindowControls(window);
-  window.on('close', event => { if (!quitting && (game || busy)) { event.preventDefault(); window.hide(); } });
+  window.on('close', event => { if (!quitting && (game || busy)) { event.preventDefault(); hiddenForOperation = true; window.hide(); } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show(); });
@@ -76,6 +110,7 @@ app.whenReady().then(async () => {
   settings.gameDirectory = await migrateLegacyGame(settings.gameDirectory, os.homedir());
   await save(settings);
   await playtime.load();
+  playtimeLoaded = true;
   const releaseNews = new ReleaseNews(stableData, app.getVersion(), await fs.readFile(path.join(__dirname, "release-notes.txt"), "utf8"), existingInstall);
   await releaseNews.load();
   ipcMain.handle("launcher:release-news", () => releaseNews.current());
@@ -113,13 +148,13 @@ app.whenReady().then(async () => {
       await updates.installUpdate(installer, process.execPath, process.pid);
       app.quit();
       return {ok: true};
-    } finally { busy = false; }
+    } finally { finishOperation(); }
   });
   const checkedProfile = input => validateSettings(input, defaults());
   const modAction = async action => {
     if (busy || game) throw new Error('Закрой Minecraft и дождись завершения текущей операции.');
     busy = true;
-    try { return await action(); } finally { busy = false; }
+    try { return await action(); } finally { finishOperation(); }
   };
   ipcMain.handle('launcher:shaders-search', (_, input, query, offset) => shaders.searchShaders(checkedProfile(input), query, offset));
   ipcMain.handle('launcher:shaders-install', (_, input, project) => modAction(() => shaders.installShader(checkedProfile(input), project, event => send({ kind: 'mods-progress', ...event }))));
@@ -155,12 +190,17 @@ app.whenReady().then(async () => {
     if (busy || game) throw new Error('Игра уже запускается или работает.');
     busy = true;
     send({ kind: 'state', state: 'preparing', message: 'Проверяем файлы…' });
-    let logHandle;
+    let logHandle, log, closeLog;
     try {
-      const config = await save({ ...input, useLatestRelease: false });
+      const config = await save(input);
       logHandle = await fs.open(path.join(app.getPath('userData'), 'launcher.log'), 'w');
-      const log = message => { const text = String(message); send({ kind: 'log', message: text }); logHandle.write(text + '\n').catch(() => {}); };
-      const report = event => { send(event); if (event.kind === 'log' || event.message && event.percent === null) log(event.message); };
+      let logQueue = Promise.resolve(), logClosed = false;
+      log = message => {
+        const text = String(message); send({ kind: 'log', message: text });
+        if (!logClosed) logQueue = logQueue.then(() => logHandle.write(text + '\n')).catch(() => {});
+      };
+      closeLog = async () => { logClosed = true; await logQueue; await logHandle.close().catch(() => {}); };
+      const report = event => { if (event.kind === 'log') log(event.message); else { send(event); if (event.message && event.percent === null) log(event.message); } };
       log(`KOPEYKA ${app.getVersion()} · Windows ${os.release()} ${process.arch} · RAM: ${(os.totalmem()/1073741824).toFixed(1)} ГБ, свободно ${(os.freemem()/1073741824).toFixed(1)} ГБ · Minecraft ${config.version} / ${config.loader}`);
       launchMemory(config.memory, os.totalmem(), os.freemem());
       const data = await getManifest();
@@ -201,25 +241,30 @@ app.whenReady().then(async () => {
       playtime.start();
       child.once('error', error => { startupFailed = true; send({ kind: 'error', message: error.message }); });
       let finished = false;
-      const finishedGame = async code => {
+      const finishedGame = async (code, signal) => {
         if (finished) return;
         finished = true;
         startupFailed = true;
-        game = null; logHandle.close().catch(() => {});
-        await checkpoint(true);
-        send(code === 0 ? { kind: 'state', state: 'idle', message: 'Игра завершена. Можно отправляться снова!' } : { kind: 'error', message: launchFailure(recentOutput, code) });
-        if (window && !window.isDestroyed()) { if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
+        // Keep the session locked until its final writes complete; another
+        // launch must not receive this session's final idle/error event.
+        await Promise.all([checkpoint(true), closeLog()]);
+        if (game === child) game = null;
+        send(code === 0 ? { kind: 'state', state: 'idle', message: 'Игра завершена. Можно отправляться снова!' } : { kind: 'error', message: launchFailure(recentOutput, code, signal) });
+        showWindow();
       };
       child.once('close', finishedGame);
-      if (child.exitCode !== null) { await finishedGame(child.exitCode); return { ok: false }; }
+      if (child.exitCode !== null || child.signalCode) { await finishedGame(child.exitCode, child.signalCode); return { ok: false }; }
       send({ kind: 'state', state: 'launching', message: 'Загрузка игры' });
       closeWhenReady();
       return { ok: true };
     } catch (error) {
-      if (logHandle) { await logHandle.write(`Ошибка: ${error.stack || error.message}\n`).catch(() => {}); await logHandle.close().catch(() => {}); }
+      if (logHandle) {
+        if (log && closeLog) { log(`Ошибка: ${error.stack || error.message}`); await closeLog(); }
+        else await logHandle.close().catch(() => {});
+      }
       send({ kind: 'error', message: error.message });
       return { ok: false, error: error.message };
-    } finally { busy = false; }
+    } finally { finishOperation(); }
   });
   await window.loadFile(path.join(__dirname, 'ui', 'index.html'));
   if (process.env.KOPEYKA_SCREENSHOT) {

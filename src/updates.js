@@ -5,17 +5,33 @@ const { spawn } = require('node:child_process');
 const REPO = 'Arab228d/kopeyka-launcher';
 const HEADERS = { 'User-Agent': 'KOPEYKA-Launcher', Accept: 'application/vnd.github+json' };
 function parseVersion(value) {
-  const match = /^v?(\d+)\.(\d+)(?:\.(\d+))?(?:-([\w.-]+))?$/.exec(value || '');
-  return match && { numbers: match.slice(1,4).map(n => Number(n || 0)), pre: match[4] || '' };
+  const match = /^v?(\d+)\.(\d+)(?:\.(\d+))?(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.exec(value || '');
+  if (!match) return null;
+  const numbers = match.slice(1,4).map(n => Number(n || 0));
+  return numbers.every(Number.isSafeInteger) ? { numbers, pre: match[4] || '' } : null;
 }
 function newer(a, b) {
   const x = parseVersion(a), y = parseVersion(b);
   if (!x || !y) return false;
   for (let i = 0; i < 3; i++) if (x.numbers[i] !== y.numbers[i]) return x.numbers[i] > y.numbers[i];
-  return !x.pre && !!y.pre;
+  if (!x.pre || !y.pre) return !x.pre && !!y.pre;
+  const left = x.pre.split('.'), right = y.pre.split('.');
+  for (let i = 0; i < Math.max(left.length, right.length); i++) {
+    if (left[i] === right[i]) continue;
+    if (left[i] === undefined || right[i] === undefined) return right[i] === undefined;
+    const numericLeft = /^\d+$/.test(left[i]), numericRight = /^\d+$/.test(right[i]);
+    if (numericLeft && numericRight) {
+      const a = BigInt(left[i]), b = BigInt(right[i]);
+      if (a !== b) return a > b;
+      continue;
+    }
+    if (numericLeft !== numericRight) return numericRight;
+    return left[i] > right[i];
+  }
+  return false;
 }
 function releaseAsset(release) {
-  return release.assets?.find(a => a.state === 'uploaded' && /^KOPEYKA-Laucher-Setup-[\w.-]+\.exe$/.test(a.name) && /^sha256:[a-f0-9]{64}$/i.test(a.digest || '') && Number.isSafeInteger(a.size) && a.size > 0 && a.size < 2 * 1024 ** 3 && trustedDownload(a.browser_download_url));
+  return Array.isArray(release?.assets) ? release.assets.find(a => a?.state === 'uploaded' && /^KOPEYKA-Laucher-Setup-[\w.-]+\.exe$/.test(a.name) && /^sha256:[a-f0-9]{64}$/i.test(a.digest || '') && Number.isSafeInteger(a.size) && a.size > 0 && a.size < 2 * 1024 ** 3 && trustedDownload(a.browser_download_url)) : undefined;
 }
 function trustedDownload(value) {
   try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'github.com' && url.pathname.startsWith('/' + REPO + '/releases/download/'); } catch { return false; }
@@ -23,7 +39,9 @@ function trustedDownload(value) {
 async function checkUpdate(current, request = fetch) {
   const response = await request(`https://api.github.com/repos/${REPO}/releases?per_page=30`, { headers: HEADERS, signal: AbortSignal.timeout(12000) });
   if (!response.ok) throw new Error(`GitHub: HTTP ${response.status}. Проверка обновления пока недоступна.`);
-  const candidates = (await response.json()).filter(r => !r.draft && (!r.prerelease || parseVersion(current)?.pre) && newer(r.tag_name, current) && releaseAsset(r));
+  const releases = await response.json();
+  if (!Array.isArray(releases)) throw new Error('GitHub вернул некорректный список обновлений.');
+  const candidates = releases.filter(r => r && !r.draft && (!r.prerelease || parseVersion(current)?.pre) && newer(r.tag_name, current) && releaseAsset(r));
   candidates.sort((a,b) => newer(a.tag_name,b.tag_name) ? -1 : newer(b.tag_name,a.tag_name) ? 1 : 0);
   const release = candidates[0];
   return release ? { version: release.tag_name.replace(/^v/, ''), asset: releaseAsset(release), notes: String(release.body || "").slice(0,16000) } : null;
@@ -32,7 +50,7 @@ async function downloadUpdate(update, directory, report = () => {}, request = fe
   const asset = releaseAsset({ assets: [update?.asset] });
   if (!asset) throw new Error('Обновление не содержит проверенного установщика.');
   await fs.mkdir(directory, { recursive: true });
-  const file = path.join(directory, asset.name), partial = file + '.part';
+  const file = path.join(directory, asset.name), partial = file + '.' + crypto.randomUUID() + '.part';
   let handle;
   try {
     const response = await request(asset.browser_download_url, { signal: AbortSignal.timeout(900000) });

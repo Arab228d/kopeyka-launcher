@@ -31,4 +31,50 @@ test('filters platform rules and rejects paths outside the game directory', () =
   assert.equal(allowedLibrary({ rules: [{ action: 'allow' }, { action: 'disallow', os: { name: 'osx' } }] }), true);
   assert.equal(allowedLibrary({ rules: [{ action: 'allow', os: { name: 'windows', arch: 'x86' } }] }), false);
   assert.throws(() => inside(path.resolve('minecraft'), '../outside.jar'));
+  const driveRoot = path.parse(path.resolve('minecraft')).root;
+  assert.equal(inside(driveRoot, 'minecraft/client.jar'), path.join(driveRoot, 'minecraft', 'client.jar'));
+});
+test('concurrent downloads of one target share verified bytes without competing partial files', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-concurrent-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const bytes = Buffer.from('one verified download'), file = path.join(root, 'client.jar');
+  const descriptor = { url: 'https://example.invalid/client.jar', size: bytes.length, sha1: crypto.createHash('sha1').update(bytes).digest('hex') };
+  let requests = 0;
+  const request = async () => { requests++; await new Promise(resolve => setImmediate(resolve)); return new Response(bytes); };
+  const results = await Promise.all([downloadFile(descriptor, file, undefined, request), downloadFile(descriptor, file, undefined, request)]);
+  assert.equal(requests, 1);
+  assert.deepEqual(results, [{ cached: false }, { cached: true }]);
+  assert.deepEqual(await fs.readFile(file), bytes);
+  assert.deepEqual(await fs.readdir(root), ['client.jar']);
+});
+test('rejects oversized transfers before writing bytes beyond the expected size', async t => {
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-oversized-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  let reports = 0;
+  await assert.rejects(downloadFile({ url: 'https://example.invalid/client.jar', size: 2, sha1: '0'.repeat(40) }, path.join(root, 'client.jar'), () => reports++, async () => new Response('too large')), /Неверный размер файла/);
+  assert.equal(reports, 0);
+  assert.deepEqual(await fs.readdir(root), []);
+});
+test('Java discovery skips a damaged preferred runtime and reuses a working installed copy', async t => {
+  const { findJava } = require('../src/engine');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-runtime-choice-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  for (const name of ['verified-1', 'verified-2']) {
+    await fs.mkdir(path.join(root, name, 'bin'), { recursive: true });
+    await fs.writeFile(path.join(root, name, 'bin', 'java.exe'), 'fixture');
+  }
+  const checked = [];
+  const found = await findJava(root, async file => { checked.push(path.basename(path.dirname(path.dirname(file)))); if (file.includes('verified-2')) throw new Error('damaged'); });
+  assert.equal(found, path.join(root, 'verified-1', 'bin', 'java.exe'));
+  assert.deepEqual(checked, ['verified-2', 'verified-1']);
+});
+test('failed Java verification removes its extracted staging tree and archive', { skip: process.platform !== 'win32' || process.arch !== 'x64' }, async t => {
+  const { ensureJava } = require('../src/engine'), AdmZip = require('adm-zip');
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'kopeyka-runtime-cleanup-'));
+  t.after(() => fs.rm(root, { recursive: true, force: true }));
+  const zip = new AdmZip(); zip.addFile('jdk/bin/java.exe', Buffer.from('not an executable'));
+  const bytes = zip.toBuffer(), checksum = crypto.createHash('sha256').update(bytes).digest('hex');
+  t.mock.method(globalThis, 'fetch', async url => String(url).includes('api.adoptium.net') ? Response.json([{ binary: { package: { checksum, link: 'https://example.invalid/java.zip' } } }]) : new Response(bytes));
+  await assert.rejects(ensureJava(21, root, () => {}), /исправный исполняемый файл Java/);
+  assert.deepEqual(await fs.readdir(path.join(root, 'java-21')), []);
 });

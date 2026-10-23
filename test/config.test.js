@@ -8,7 +8,7 @@ test('saves supported settings and drops arbitrary input', () => {
   assert.equal(result.nickname, 'Kopeyka_1'); assert.equal(result.memory, 8); assert.equal(result.arbitrary, undefined);
 });
 test('rejects invalid player names, memory, versions and relative paths', () => {
-  for (const input of [{ nickname: '../bad' }, { nickname: 'ab' }, { memory: 100 }, { memory: '4' }, { version: '../../bad' }, { gameDirectory: 'relative' }]) {
+  for (const input of [null, [], 'settings', 4, { nickname: '../bad' }, { nickname: 'ab' }, { memory: 100 }, { memory: '4' }, { version: '../../bad' }, { gameDirectory: 'relative' }]) {
     assert.throws(() => validateSettings(input, defaults));
   }
 });

@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const { execFile } = require('node:child_process');
 const { promisify } = require('node:util');
 const { Worker } = require('node:worker_threads');
-const { downloadError } = require('./installer');
+const { downloadError, inside } = require('./installer');
 const MANIFEST = 'https://piston-meta.mojang.com/mc/game/version_manifest_v2.json';
 async function fetchJson(url, request = fetch) {
   try {
@@ -41,23 +41,24 @@ async function download(url, destination, hash, send) {
   }
   await fs.rename(destination + '.part', destination);
 }
-async function findJava(root) {
+async function findJava(root, verify = async () => {}) {
   const entries = await fs.readdir(root, { withFileTypes: true });
   entries.sort((a,b) => Number(b.name.startsWith('verified-')) - Number(a.name.startsWith('verified-')) || b.name.localeCompare(a.name));
   for (const entry of entries) {
     if (!entry.isDirectory()) continue;
     const executable = path.join(root, entry.name, 'bin', 'java.exe');
-    try { await fs.access(executable); return executable; } catch {}
+    try { await fs.access(executable); await verify(executable); return executable; } catch {}
   }
   return null;
 }
 async function ensureJava(major, runtimeRoot, send, bundledRoot) {
   if (process.platform !== 'win32' || process.arch !== 'x64') throw new Error('Эта сборка пока поддерживает Windows x64.');
+  if (!Number.isSafeInteger(major) || major <= 0) throw new Error('Некорректная версия Java.');
+  const verify = executable => promisify(execFile)(executable, ['-version'], { windowsHide: true, timeout: 20000 });
   if (bundledRoot) {
     try {
-      const bundled = await findJava(path.join(bundledRoot, `java-${major}`));
+      const bundled = await findJava(path.join(bundledRoot, `java-${major}`), verify);
       if (bundled) {
-        await promisify(execFile)(bundled, ['-version'], { windowsHide: true, timeout: 20000 });
         send({ kind: 'log', message: `Используется Java ${major} из установщика.` });
         return bundled;
       }
@@ -65,11 +66,8 @@ async function ensureJava(major, runtimeRoot, send, bundledRoot) {
   }
   const root = path.join(runtimeRoot, `java-${major}`);
   await fs.mkdir(root, { recursive: true });
-  let executable = await findJava(root);
-  if (executable) {
-    try { await promisify(execFile)(executable, ['-version'], { windowsHide: true, timeout: 20000 }); return executable; }
-    catch { send({ kind: 'log', message: `Установленная Java ${major} не запускается. Скачиваем исправную копию.` }); executable = null; }
-  }
+  let executable = await findJava(root, verify);
+  if (executable) return executable;
   if (!executable) {
     send({ kind: 'progress', percent: null, message: `Подготовка Java ${major}…` });
     const packages = await fetchJson(`https://api.adoptium.net/v3/assets/latest/${major}/hotspot?architecture=x64&image_type=jdk&os=windows&vendor=eclipse`);
@@ -86,24 +84,30 @@ async function ensureJava(major, runtimeRoot, send, bundledRoot) {
     }
     send({ kind: 'progress', percent: null, message: 'Распаковка Java…' });
     const staging = await fs.mkdtemp(path.join(root, 'install-'));
-    await new Promise((resolve, reject) => {
-      const worker = new Worker(path.join(__dirname, 'runtime-extract.js'), { workerData: { archive, destination: staging } });
-      worker.once('message', result => result.ok ? resolve() : reject(new Error(`Распаковка Java: ${result.error}`)));
-      worker.once('error', reject);
-      worker.once('exit', code => { if (code !== 0) reject(new Error(`Распаковка Java завершилась с кодом ${code}.`)); });
-    });
-    executable = await findJava(staging);
-    if (!executable) throw new Error('В архиве не найден исполняемый файл Java.');
-    await promisify(execFile)(executable, ['-version'], { windowsHide: true, timeout: 20000 });
-    const directory = path.dirname(path.dirname(executable));
-    const destination = path.join(root, `verified-${Date.now()}`);
-    await fs.rename(directory, destination);
-    await fs.rmdir(staging);
-    executable = path.join(destination, 'bin', 'java.exe');
-    await fs.unlink(archive);
+    try {
+      await new Promise((resolve, reject) => {
+        const worker = new Worker(path.join(__dirname, 'runtime-extract.js'), { workerData: { archive, destination: staging } });
+        let result;
+        worker.once('message', message => { result = message; });
+        worker.once('error', reject);
+        worker.once('exit', code => {
+          if (code !== 0) reject(new Error(`Распаковка Java завершилась с кодом ${code}.`));
+          else if (!result?.ok) reject(new Error(`Распаковка Java: ${result?.error || 'не получен результат'}`));
+          else resolve();
+        });
+      });
+      executable = await findJava(staging, verify);
+      if (!executable) throw new Error('В архиве не найден исправный исполняемый файл Java.');
+      const directory = path.dirname(path.dirname(executable));
+      const destination = path.join(root, `verified-${Date.now()}-${crypto.randomUUID()}`);
+      await fs.rename(directory, destination);
+      executable = path.join(destination, 'bin', 'java.exe');
+    } finally {
+      await fs.rm(inside(root, path.relative(root, staging)), { recursive: true, force: true }).catch(() => {});
+      await fs.unlink(archive).catch(() => {});
+    }
   }
   if (!executable) throw new Error('Не удалось найти Java после распаковки.');
-  await promisify(execFile)(executable, ['-version'], { windowsHide: true, timeout: 20000 });
   return executable;
 }
-module.exports = { fetchJson, ensureJava, MANIFEST };
+module.exports = { fetchJson, ensureJava, findJava, MANIFEST };

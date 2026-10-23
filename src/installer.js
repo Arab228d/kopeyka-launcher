@@ -15,7 +15,8 @@ function downloadError(error, url) {
 
 function inside(root, relative) {
   const resolved = path.resolve(root, relative);
-  if (!resolved.startsWith(path.resolve(root) + path.sep)) throw new Error('Некорректный путь файла Minecraft.');
+  const fromRoot = path.relative(path.resolve(root), resolved);
+  if (!fromRoot || fromRoot === '..' || fromRoot.startsWith('..' + path.sep) || path.isAbsolute(fromRoot)) throw new Error('Некорректный путь файла Minecraft.');
   return resolved;
 }
 async function validFile(file, descriptor) {
@@ -27,11 +28,26 @@ async function validFile(file, descriptor) {
     return hash.digest('hex') === descriptor.sha1.toLowerCase();
   } catch { return false; }
 }
+// Mod and shader installation may request the same target concurrently. Queue
+// each target so no writer can truncate or rename another download's partial.
+const downloads = new Map();
 async function downloadFile(descriptor, file, progress = () => {}, request = fetch) {
   if (!/^[a-f0-9]{40}$/i.test(descriptor.sha1)) throw new Error('В каталоге отсутствует контрольная сумма файла.');
+  const resolved = path.resolve(file);
+  const key = process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+  const previous = downloads.get(key);
+  const task = (async () => {
+    if (previous) await previous.catch(() => {});
+    return transferFile(descriptor, file, progress, request);
+  })();
+  downloads.set(key, task);
+  try { return await task; }
+  finally { if (downloads.get(key) === task) downloads.delete(key); }
+}
+async function transferFile(descriptor, file, progress, request) {
   if (await validFile(file, descriptor)) return { cached: true };
   await fs.mkdir(path.dirname(file), { recursive: true });
-  const partial = file + '.part';
+  const partial = file + '.' + crypto.randomUUID() + '.part';
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt++) {
     if (attempt > 1) await delay(500 * (attempt - 1));
@@ -43,6 +59,7 @@ async function downloadFile(descriptor, file, progress = () => {}, request = fet
       const hash = crypto.createHash('sha1'); let received = 0;
       const total = descriptor.size || Number(response.headers.get('content-length'));
       for await (const chunk of response.body) {
+        if (Number.isFinite(descriptor.size) && received + chunk.length > descriptor.size) throw new Error('Неверный размер файла');
         let offset = 0;
         while (offset < chunk.length) {
           const { bytesWritten } = await handle.write(chunk, offset, chunk.length - offset);

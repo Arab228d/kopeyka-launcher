@@ -5,7 +5,7 @@ const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
 const AdmZip = require('adm-zip');
-const { resolveMods, installMods, importMods, listMods, toggleMod, profileDirectory } = require('../src/mods');
+const { resolveMods, installMods, importMods, listMods, toggleMod, profileDirectory, safeJar } = require('../src/mods');
 const { validateSettings } = require('../src/config');
 const bytes = Buffer.from('verified mod download');
 function version(project, id, dependencies = [], overrides = {}) {
@@ -80,4 +80,68 @@ test('backfills old installed-mod pictures once and filters untrusted media URLs
   assert.equal(list[0].icon, 'https://cdn.modrinth.com/icon.png');
   assert.deepEqual(list[0].gallery, ['https://cdn.modrinth.com/screen.png']);
   await listMods(config, request); assert.equal(requests, 1);
+});
+
+test('reinstall keeps disabled mods disabled without downloading another copy', async t => {
+  const config = await fixture(t), versions = [version('one', '1')];
+  await installMods(config, ['one'], () => {}, requestFor(versions));
+  await toggleMod(config, 'one.jar');
+  const request = requestFor(versions);
+  await installMods(config, ['one'], () => {}, async url => {
+    assert.ok(!url.startsWith('https://cdn.modrinth.com/'), 'an installed verified file needs no transfer');
+    return request(url);
+  });
+  assert.deepEqual((await listMods(config)).map(({ file, enabled }) => ({ file, enabled })), [{ file: 'one.jar.disabled', enabled: false }]);
+});
+
+test('a manually removed mod does not leave a stale registry entry blocking installation', async t => {
+  const config = await fixture(t);
+  await installMods(config, ['one'], () => {}, requestFor([version('one', '1')]));
+  await assert.rejects(installMods(config, ['one'], () => {}, requestFor([version('one', '2')])), /другая версия/);
+  await fs.unlink(path.join(profileDirectory(config), 'mods', 'one.jar'));
+  await installMods(config, ['one'], () => {}, requestFor([version('one', '2')]));
+  const registry = JSON.parse(await fs.readFile(path.join(profileDirectory(config), 'mods-index.json'), 'utf8'));
+  assert.equal(registry.length, 1);
+  assert.equal(registry[0].version, '2');
+});
+
+test('shared dependencies are fetched once per resolution', async t => {
+  const config = await fixture(t), requests = new Map();
+  const request = requestFor([version('one', '1', [{ project_id: 'api', dependency_type: 'required' }]), version('two', '2', [{ project_id: 'api', dependency_type: 'required' }]), version('api', '3')]);
+  await resolveMods(config, ['one', 'two', 'one'], async url => {
+    requests.set(url, (requests.get(url) || 0) + 1);
+    return request(url);
+  });
+  assert.equal(requests.size, 3);
+  assert.ok([...requests.values()].every(count => count === 1));
+});
+
+test('local imports preserve disabled files, deduplicate selection and read NeoForge metadata', async t => {
+  const config = { ...await fixture(t), loader: 'neoforge' }, file = path.join(config.gameDirectory, 'local.jar');
+  const zip = new AdmZip();
+  zip.addFile('META-INF/neoforge.mods.toml', Buffer.from('modId="local"\ndisplayName="NeoForge local mod"'));
+  zip.writeZip(file);
+  assert.deepEqual(await importMods(config, [file, file]), ['local.jar']);
+  assert.equal((await listMods(config))[0].title, 'NeoForge local mod');
+  await toggleMod(config, 'local.jar');
+  await importMods(config, [file]);
+  assert.deepEqual((await listMods(config)).map(v => v.file), ['local.jar.disabled']);
+  zip.addFile('other', Buffer.from('changed')); zip.writeZip(file);
+  await assert.rejects(importMods(config, [file]), /уже существует/);
+});
+
+test('malformed registry data recovers from backup and ignores directories named as mods', async t => {
+  const config = await fixture(t), root = profileDirectory(config);
+  await fs.mkdir(path.join(root, 'mods', 'folder.jar'), { recursive: true });
+  await fs.writeFile(path.join(root, 'mods', 'ONE.JAR.DISABLED'), bytes);
+  await fs.writeFile(path.join(root, 'mods-index.json'), 'null');
+  await fs.writeFile(path.join(root, 'mods-index.json.bak'), JSON.stringify([{ project: 'one', file: 'one.jar', title: 'Recovered mod', gallery: {} }]));
+  const list = await listMods(config);
+  assert.equal(list.length, 1);
+  assert.equal(list[0].title, 'Recovered mod');
+  assert.equal(list[0].enabled, false);
+  assert.deepEqual(list[0].gallery, []);
+  await toggleMod(config, 'ONE.JAR.DISABLED');
+  assert.equal((await listMods(config))[0].file, 'ONE.JAR');
+  for (const name of ['CON.jar', 'aux.extra.jar', 'LPT1.jar']) assert.throws(() => safeJar(name), /Некорректное/);
 });
