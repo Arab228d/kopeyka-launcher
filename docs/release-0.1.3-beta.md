@@ -10,4 +10,3 @@
 
 Windows x64. Скачайте KOPEYKA-Laucher-Setup-0.1.3-beta.exe или обновитесь из лаунчера. Настройки, профили и игровые данные хранятся отдельно от приложения.
 
-Discord: https://discord.gg/BcU7ZTqw24
