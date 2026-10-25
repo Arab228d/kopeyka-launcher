@@ -22,14 +22,14 @@ async function modrinth(route, request = fetch, timeout = 30000) {
   return response.json();
 }
 function requireLoader(config) {
-  if (!['forge', 'fabric', 'neoforge'].includes(config.loader)) throw new Error('Для модов выбери Forge, NeoForge или Fabric.');
+  if (!['forge', 'forge_optifine', 'fabric', 'neoforge'].includes(config.loader)) throw new Error('Для модов выбери Forge, NeoForge или Fabric.');
 }
 function compatible(version, config) {
-  return version && Array.isArray(version.game_versions) && version.game_versions.includes(config.version) && Array.isArray(version.loaders) && version.loaders.includes(config.loader) && !['server_only', 'dedicated_server_only'].includes(version.environment);
+  return version && Array.isArray(version.game_versions) && version.game_versions.includes(config.version) && Array.isArray(version.loaders) && version.loaders.includes(config.loader === 'forge_optifine' ? 'forge' : config.loader) && !['server_only', 'dedicated_server_only'].includes(version.environment);
 }
 async function searchMods(config, query, request) {
   requireLoader(config);
-  const params = new URLSearchParams({ query: String(query || '').slice(0, 120), limit: '24', index: 'downloads', facets: JSON.stringify([['project_type:mod'], [`versions:${config.version}`], [`categories:${config.loader}`], ['client_side:required', 'client_side:optional']]) });
+  const params = new URLSearchParams({ query: String(query || '').slice(0, 120), limit: '24', index: 'downloads', facets: JSON.stringify([['project_type:mod'], [`versions:${config.version}`], [`categories:${config.loader === 'forge_optifine' ? 'forge' : config.loader}`], ['client_side:required', 'client_side:optional']]) });
   const data = await modrinth(`/search?${params}`, request);
   return data.hits.map(hit => {
     const result = { id: hit.project_id, title: hit.title, description: hit.description, author: hit.author, downloads: hit.downloads,
@@ -56,7 +56,7 @@ async function resolveMods(config, projects, request) {
     let version;
     if (exactVersion) version = await load(`/version/${encodeURIComponent(exactVersion)}`);
     else {
-      const params = new URLSearchParams({ game_versions: JSON.stringify([config.version]), loaders: JSON.stringify([config.loader]), include_changelog: 'false' });
+      const params = new URLSearchParams({ game_versions: JSON.stringify([config.version]), loaders: JSON.stringify([config.loader === 'forge_optifine' ? 'forge' : config.loader]), include_changelog: 'false' });
       const list = await load(`/project/${encodeURIComponent(project)}/version?${params}`);
       if (!Array.isArray(list)) throw new Error('Modrinth вернул некорректный список версий. Попробуйте позже.');
       version = list.find(v => compatible(v, config) && v.version_type === 'release') || list.find(v => compatible(v, config));
@@ -167,7 +167,7 @@ async function importMods(config, files) {
     const neo = archive.getEntry('META-INF/neoforge.mods.toml');
     const fabric = archive.getEntry('fabric.mod.json'), forge = archive.getEntry('META-INF/mods.toml') || archive.getEntry('mcmod.info');
     if (!fabric && !forge && !neo) throw new Error(`${name}: это не мод Forge/NeoForge/Fabric.`);
-    if (config.loader === 'forge' && !forge || config.loader === 'fabric' && !fabric || config.loader === 'neoforge' && !neo && !forge) throw new Error(`${name}: мод для другого загрузчика.`);
+    if (['forge', 'forge_optifine'].includes(config.loader) && !forge || config.loader === 'fabric' && !fabric || config.loader === 'neoforge' && !neo && !forge) throw new Error(`${name}: мод для другого загрузчика.`);
     const sha1 = crypto.createHash('sha1').update(bytes).digest('hex');
     if (names.has(name.toLowerCase())) {
       if (names.get(name.toLowerCase()) !== sha1) throw new Error(`Выбраны разные моды с одинаковым именем ${name}.`);

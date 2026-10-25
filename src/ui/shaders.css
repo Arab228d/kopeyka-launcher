@@ -1,15 +1,9 @@
 /* Colored symbols retain the existing pixel frames. */
-.window-button { transition: color .18s, filter .22s; }
+.window-button { transition: color .12s ease, background-color .12s ease; }
 #window-minimize { --glow: #ffcb55; color: #e3bb59; }
 #window-maximize { --glow: #63e48c; color: #79cd96; }
 #window-close { --glow: #ff646e; color: #df858a; }
-.window-controls .window-button:hover { color: var(--glow); filter: drop-shadow(0 0 4px var(--glow)) drop-shadow(0 0 9px color-mix(in srgb, var(--glow) 55%, transparent)); }
-#shaders-dialog { width: min(960px, calc(100vw - 64px)); max-height: calc(100vh - 100px); padding: 26px; border: 2px solid #738496; border-radius: 12px; background: #15202aee; color: #e8edf4; box-shadow: 0 24px 90px #0008; overflow-y: auto; opacity: 0; transform: translateY(18px) scale(.97); transition: opacity .25s, transform .25s, display .25s allow-discrete, overlay .25s allow-discrete; }
-#shaders-dialog[open] { opacity: 1; transform: none; }
-@starting-style { #shaders-dialog[open] { opacity: 0; transform: translateY(18px) scale(.97); } }
-#shaders-dialog::backdrop { background: #07121b88; backdrop-filter: blur(16px) saturate(.7); opacity: 0; transition: opacity .25s, display .25s allow-discrete, overlay .25s allow-discrete; }
-#shaders-dialog[open]::backdrop { opacity: 1; }
-@starting-style { #shaders-dialog[open]::backdrop { opacity: 0; } }
+.window-controls .window-button:hover { color: var(--glow); filter: none; box-shadow: inset 0 1px #ffffff28, 0 0 8px color-mix(in srgb, var(--glow) 55%, transparent); }
 .shader-heading { display: flex; justify-content: space-between; align-items: center; gap: 20px; }
 .shader-heading h2 { font: 18px PlayPixel, monospace; }
 .shader-hint, #shaders-status { font: 13px/1.6 'Segoe UI', sans-serif; color: #b6c4d3; }
@@ -25,4 +19,4 @@
 #shaders-more { display: block; margin: 12px auto; }
 #shaders-more[hidden] { display: none; }
 @media(max-width:750px) { #shaders-results { grid-template-columns: 1fr; } }
-@media(prefers-reduced-motion:reduce) { #shaders-dialog, #shaders-dialog::backdrop, .window-button { transition: none; } .shader-card { animation: none; } }
+@media(prefers-reduced-motion:reduce) { .window-button { transition: none; } .shader-card { animation: none; } }

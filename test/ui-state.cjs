@@ -20,6 +20,7 @@ app.whenReady().then(async () => {
     const catalog = { fabric: { '1.21.1': true, '1.20.1': true }, forge: {}, neoforge: {}, optifine: {}, errors: [] };
     let settingsFail = false, latest = false, resolveRefresh, pendingMods = [], deferMods = false, pendingShaders = [], deferShaders = false;
     const manifest = { latest: { release: '1.21.1' }, versions: [{ id: '1.21.1', type: 'release' }, { id: '1.20.1', type: 'release' }] };
+    ipcMain.handle('launcher:avatar', () => null);
     ipcMain.handle('launcher:settings', () => {
       if (settingsFail) throw new Error('Settings temporarily unavailable');
       return { nickname: 'Player', profiles: ['Player'], memory: 4, version: '1.21.1', loader: 'vanilla', useLatestRelease: latest, gameDirectory: data, totalMemory: 16 };
@@ -29,7 +30,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('launcher:save', (_, input) => input);
     ipcMain.handle('launcher:update-check', () => null);
     ipcMain.handle('launcher:release-news', () => ({ unread: false }));
-    ipcMain.handle('launcher:mods-list', (_, profile) => deferMods ? new Promise(resolve => pendingMods.push({ profile, resolve })) : []);
+    ipcMain.handle('launcher:content-list', (_, profile) => deferMods ? new Promise(resolve => pendingMods.push({ profile, resolve })) : []);
     ipcMain.handle('launcher:shaders-search', (_, profile) => deferShaders ? new Promise(resolve => pendingShaders.push({ profile, resolve })) : ({ total: 0, hits: [] }));
     const errors = [];
     async function open() {
@@ -52,9 +53,9 @@ app.whenReady().then(async () => {
     await until(() => pendingMods.length === 1, 'First mod request missing');
     await changeVersion('1.20.1|fabric');
     await until(() => pendingMods.length === 2, 'Changing version must refresh the open mod list');
-    pendingMods[1].resolve([{ file: 'new.jar', title: 'Current build', enabled: true }]);
+    pendingMods[1].resolve([{ kind: 'mod', file: 'new.jar', title: 'Current build', enabled: true }]);
     await until(() => js("document.getElementById('mods-installed-list').textContent.includes('Current build')"), 'Current mod list missing');
-    pendingMods[0].resolve([{ file: 'old.jar', title: 'Old build', enabled: true }]);
+    pendingMods[0].resolve([{ kind: 'mod', file: 'old.jar', title: 'Old build', enabled: true }]);
     await delay(100);
     assert.equal(await js("document.getElementById('mods-installed-list').textContent.includes('Old build')"), false, 'Stale list must not replace the selected build');
     win.webContents.send('launcher:event', { kind: 'state', state: 'running' });
@@ -81,6 +82,7 @@ app.whenReady().then(async () => {
     await open();
     await until(() => js("!document.getElementById('play').disabled"), 'Latest-release window did not load');
     deferShaders = true;
+    await js("document.querySelector('[data-page=mods]').click()");
     await js("document.getElementById('shaders-open').click()");
     await until(() => pendingShaders.length === 1, 'Initial shader query missing');
     win.webContents.send('launcher:event', { kind: 'versions-refreshed', data: newManifest });

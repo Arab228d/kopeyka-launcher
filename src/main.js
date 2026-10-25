@@ -151,14 +151,18 @@ app.whenReady().then(async () => {
     } finally { finishOperation(); }
   });
   const checkedProfile = input => validateSettings(input, defaults());
+  ipcMain.handle('launcher:avatar', (_, nickname) => require('./profile-avatar').avatar(nickname, path.join(stableData, 'avatars')));
   const modAction = async action => {
     if (busy || game) throw new Error('Закрой Minecraft и дождись завершения текущей операции.');
     busy = true;
     try { return await action(); } finally { finishOperation(); }
   };
   ipcMain.handle('launcher:shaders-search', (_, input, query, offset) => shaders.searchShaders(checkedProfile(input), query, offset));
+  ipcMain.handle('launcher:catalog-search', (_, input, kind, query, offset) => require('./catalog').searchCatalog(checkedProfile(input), kind, query, offset));
+  ipcMain.handle('launcher:catalog-install', (_, input, kind, project) => modAction(() => require('./catalog').installCatalog(checkedProfile(input), kind, project, event => send({ kind: 'mods-progress', ...event }))));
   ipcMain.handle('launcher:shaders-install', (_, input, project) => modAction(() => shaders.installShader(checkedProfile(input), project, event => send({ kind: 'mods-progress', ...event }))));
   ipcMain.handle('launcher:mods-list', (_, input) => mods.listMods(checkedProfile(input)));
+  ipcMain.handle('launcher:content-list', (_, input) => require('./installed-content').listInstalled(checkedProfile(input)));
   ipcMain.handle('launcher:mods-import', (_, input) => modAction(async () => {
     const result = await dialog.showOpenDialog(window, { title: 'Выбери моды', properties: ['openFile', 'multiSelections'], filters: [{ name: 'Minecraft mods', extensions: ['jar'] }] });
     return result.canceled ? [] : mods.importMods(checkedProfile(input), result.filePaths);

@@ -15,6 +15,7 @@ app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 app.commandLine.appendSwitch('disable-renderer-backgrounding');
 app.whenReady().then(async () => {
   try {
+    ipcMain.handle('launcher:avatar', () => null);
     ipcMain.handle('launcher:settings', () => ({ nickname: 'Player', memory: 4, version: '1.21.1', loader: 'vanilla', gameDirectory: data, totalMemory: 16 }));
     ipcMain.handle('launcher:loader-catalog', () => ({forge:{},fabric:{},neoforge:{},optifine:{},errors:[]}));
     ipcMain.handle('launcher:update-check', () => null);

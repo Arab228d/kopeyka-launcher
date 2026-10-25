@@ -38,4 +38,4 @@ body.launch-transition .world-stage { inset: var(--titlebar-height) 0 0; height:
   .play-panel > .launch-glow { margin-bottom: 13px; }
 }
 .window-title { gap: 0; }
-.title-logo { width: 92px; height: 24px; object-fit: contain; object-position: center; image-rendering: auto; transform: translateY(-1px); }
+.title-logo { width: 92px; height: 24px; object-fit: contain; object-position: left center; image-rendering: auto; transform: translate(-16px,-1px); }

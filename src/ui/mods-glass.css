@@ -13,8 +13,8 @@ body.mods-view main::before, body.mods-view main::after { display: none; }
 .mods-profile label span { margin-top: 7px; color: #f2f6fa; font-size: 9px; }
 #loader-note { color: #c5d4e1; max-width: 270px; }
 #optifine-panel { display: none; }
-#mods .secondary-button, #shaders-dialog .secondary-button, .update-pill { border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; background: #20344780; box-shadow: none; clip-path: var(--surface-shape); color: #e9f3fb; padding: 6px 12px; transition: background .18s, filter .18s, transform .18s; }
-#mods .secondary-button:hover:not(:disabled), #shaders-dialog .secondary-button:hover:not(:disabled), .update-pill:hover:not(:disabled) { border-image-source: var(--frame-hover); background: #37577699; filter: drop-shadow(0 0 5px #b5d9ff33); }
+#mods .secondary-button, #shaders-panel .secondary-button, .update-pill { border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; background: #20344780; box-shadow: none; clip-path: var(--surface-shape); color: #e9f3fb; padding: 6px 12px; transition: background .18s, filter .18s, transform .18s; }
+#mods .secondary-button:hover:not(:disabled), #shaders-panel .secondary-button:hover:not(:disabled), .update-pill:hover:not(:disabled) { border-image-source: var(--frame-hover); background: #37577699; filter: drop-shadow(0 0 5px #b5d9ff33); }
 .mods-tabs { display: flex; gap: 12px; border: 0; padding: 0; }
 #mods .mods-tabs .secondary-button { min-width: 140px; min-height: 44px; padding: 8px 16px; font-size: 9px; }
 #mods .mods-tabs .active { border-image-source: var(--frame-gold); color: #ffe5a1; background: #84672c40; }
@@ -31,14 +31,12 @@ body.mods-view main::before, body.mods-view main::after { display: none; }
 .mods-footer { background: transparent; border: 0; border-top: 1px solid #cadfee33; padding: 10px 4px; box-shadow: none; }
 #mods-selection { color: #d6e8f5; }
 #mods-status { color: #becfdd; }
-#shaders-dialog { background: #12293a88; backdrop-filter: blur(16px) saturate(.8); border: 10px solid transparent; border-image: var(--frame-hover) 12 / 12px / 0 stretch; border-radius: 0; clip-path: var(--surface-shape); padding: 22px; }
-#shaders-dialog::backdrop { background: #07152355; backdrop-filter: blur(10px) saturate(.7); }
-#shaders-dialog .shader-heading h2 { font-size: 18px; color: #ecf6fd; }
-#shaders-dialog .shader-hint { color: #d0deea; }
-#shaders-dialog .mods-search input { background: #10293b66; border: 2px solid #9dbed066; border-radius: 0; clip-path: var(--surface-shape); box-shadow: none; padding-left: 14px; color: #f2f8fd; }
+#shaders-panel .shader-heading h2 { font-size: 18px; color: #ecf6fd; }
+#shaders-panel .shader-hint { color: #d0deea; }
+#shaders-panel .mods-search input { background: #10293b66; border: 2px solid #9dbed066; border-radius: 0; clip-path: var(--surface-shape); box-shadow: none; padding-left: 14px; color: #f2f8fd; }
 .shader-card { background: #19304470; border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; clip-path: var(--surface-shape); padding: 0; }
 .shader-card .mod-media { border: 0; margin: 0; background: #142a3c55; height: 160px; }
-#shaders-dialog .shader-card .secondary-button { border-image-source: var(--frame-gold); background: #82702d44; color: #fff0bf; padding: 8px 12px; }
+#shaders-panel .shader-card .secondary-button { border-image-source: var(--frame-gold); background: #82702d44; color: #fff0bf; padding: 8px 12px; }
 .shader-card .mod-body { padding: 14px; }
 .shader-card strong { font-size: 15px; }
 .shader-card p { min-height: 38px; }
@@ -47,7 +45,7 @@ body.mods-view main::before, body.mods-view main::after { display: none; }
 .update-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 @media(max-height:800px) { #mods { padding-top: 12px; gap: 12px; } .mods-heading { min-height: 68px; } .mods-empty { min-height: 200px; } }
 @media(max-width:1100px) { .mods-branding { width: 175px; } #loader-note { max-width: 210px; } }
-@media(prefers-reduced-motion:reduce) { #mods .secondary-button, #shaders-dialog .secondary-button, .update-pill { transition: none; } }
+@media(prefers-reduced-motion:reduce) { #mods .secondary-button, #shaders-panel .secondary-button, .update-pill { transition: none; } }
 #settings .setting-row { padding: 14px 0; }
 #update-status { max-width: 310px; line-height: 1.4; overflow-wrap: anywhere; }
 .update-actions .secondary-button { padding: 7px 9px; font-size: 7px; }

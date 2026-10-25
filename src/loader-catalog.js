@@ -14,6 +14,13 @@ function neoMinecraft(version) {
 }
 function parseCatalog(kind, body) {
   const result = {};
+  if (kind === 'forge_optifine') for (const row of body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const file = /adloadx\?f=((?:preview_)?OptiFine_([A-Za-z0-9.\-]+)_HD_U_[A-Za-z0-9_]+\.jar)/.exec(row[1]);
+    const forge = /class=['"]colForge['"][^>]*>\s*Forge\s+#?([\d]+(?:\.[\d]+){2,3})\s*</i.exec(row[1]);
+    if (!file || !forge) continue;
+    const previous = result[file[2]];
+    if (!previous || previous.optifine.startsWith('preview_') && !file[1].startsWith('preview_')) result[file[2]] = { optifine: file[1], forge: forge[1] };
+  }
   if (kind === 'forge') for (const [key, value] of Object.entries(JSON.parse(body).promos)) {
     const version = key.replace(/-(recommended|latest)$/, '');
     if (/-recommended$/.test(key) || !result[version]) result[version] = value;
@@ -43,13 +50,16 @@ async function fetchCatalog(cacheDirectory, request = fetch) {
     try {
       const response = await request(url, { signal: AbortSignal.timeout(12000), headers: { 'User-Agent': 'KOPEYKA-Launcher' } });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const parsed = parseCatalog(kind, await response.text());
+      const body = await response.text();
+      const parsed = parseCatalog(kind, body);
       if (!Object.keys(parsed).length) throw new Error('Пустой каталог');
       catalog[kind] = parsed;
+      if (kind === 'optifine') catalog.forge_optifine = parseCatalog('forge_optifine', body);
     } catch {
       const previous = cached[kind];
       catalog[kind] = previous && typeof previous === 'object' && !Array.isArray(previous) ? previous : null;
       catalog.errors.push(kind);
+      if (kind === 'optifine') catalog.forge_optifine = cached.forge_optifine || {};
     }
   }));
   const partial = file + '.' + randomUUID() + '.part';

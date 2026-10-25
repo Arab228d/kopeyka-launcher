@@ -23,7 +23,8 @@ async function installShader(config, project, report = () => {}, request) {
   const root = profileDirectory(config), target = inside(root, '.downloads/shader-' + file.hashes.sha1 + '.zip');
   const destination = inside(root, 'shaderpacks/' + file.filename);
   const descriptor = { url: file.url, sha1: file.hashes.sha1, size: file.size };
-  if (await validFile(destination, descriptor)) return { file: file.filename, loaders: version.loaders };
+  const remember = () => require('./content-media').rememberContent(root, file.filename, 'shader', file.hashes.sha1, info);
+  if (await validFile(destination, descriptor)) { await remember(); return { file: file.filename, loaders: version.loaders }; }
   // Refuse a conflicting archive before starting a potentially large transfer.
   try { await fs.access(destination); throw new Error('Архив с таким именем уже существует.'); }
   catch (error) { if (error.code !== 'ENOENT') throw error; }
@@ -31,6 +32,7 @@ async function installShader(config, project, report = () => {}, request) {
   await fs.mkdir(path.dirname(destination), {recursive:true});
   try { await fs.copyFile(target, destination, require('node:fs').constants.COPYFILE_EXCL); }
   catch(error) { if (error.code !== 'EEXIST') throw error; if (!await validFile(destination, descriptor)) throw new Error('Архив с таким именем уже существует.'); }
+  await remember();
   return { file: file.filename, loaders: version.loaders };
 }
 module.exports = { searchShaders, installShader };

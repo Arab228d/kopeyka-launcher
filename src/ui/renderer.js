@@ -1,6 +1,10 @@
 const $ = id => document.getElementById(id);
 let config, versions = [], busy = false, versionsReady = false, modsBusy = false, loaderCatalog = null, updateAvailable = null, updating = false;
 let checkingUpdate = false, refreshingVersions = false, profilesSaving = false, savingSettings = false, shaderSearchBusy = false, installedRequest = 0;
+let modsTab = 'mods', shaderProfile = null;
+const contentTabs = [['mods-installed-tab', 'mods'], ['mods-catalog-tab', 'mod-catalog'], ['resources-tab', 'resources'], ['shaders-open', 'shaders']];
+const catalogKind = () => modsTab === 'mod-catalog' ? 'mod' : modsTab === 'resources' ? 'resourcepack' : 'shader';
+const catalogLabels = { shader: 'Шейдеры', mod: 'Моды', resourcepack: 'Ресурспаки' };
 const api = window.launcher;
 let refreshedVersions = null, refreshedLoaders = null;
 function acceptVersions(result) {
@@ -10,12 +14,10 @@ function acceptVersions(result) {
 }
 function applyCatalogRefresh() {
   if (!versionsReady || busy || modsBusy || profilesSaving || savingSettings || (!refreshedVersions && !refreshedLoaders)) return;
-  const previousProfile = profileKey(current());
   if (refreshedVersions) { acceptVersions(refreshedVersions); refreshedVersions = null; }
   if (refreshedLoaders) { loaderCatalog = refreshedLoaders; refreshedLoaders = null; }
   renderVersions(); updateModProfile(); updateControls();
   if (!$('mods').hidden) refreshInstalled();
-  if ($('shaders-dialog').open && previousProfile !== profileKey(current())) loadShaders();
 }
 const logClock = new Intl.DateTimeFormat('ru-RU', {hour:'2-digit',minute:'2-digit',second:'2-digit'});
 let logSecond = -1, logStamp = '';
@@ -24,12 +26,24 @@ function page(name) {
   document.body.classList.toggle('mods-view', name === 'mods');
   document.body.classList.toggle('logs-view', name === 'logs');
   document.querySelectorAll('.page').forEach(el => el.hidden = el.id !== name);
-  document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.page === name));
+  document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.page === name || el.dataset.page === 'home' && ['mods', 'settings'].includes(name)));
   if (name === 'mods' && config) { updateModProfile(); refreshInstalled(); }
   if (name === 'logs') flushLogs();
 }
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => page(el.dataset.page)));
 function status(message, error = false) { $('status').textContent = message; $('status').parentElement.hidden = !message; $('status').parentElement.classList.toggle('error', error); }
+function updateAvatar(element, nickname) {
+  if (!api.avatar || element.dataset.nickname === nickname) return;
+  element.dataset.nickname = nickname;
+  element.querySelector('img')?.remove();
+  api.avatar(nickname).then(src => {
+    if (!src || element.dataset.nickname !== nickname) return;
+    const picture = document.createElement('img'); picture.className = 'skin-avatar';
+    picture.alt = ''; picture.src = src; picture.decoding = 'async';
+    picture.addEventListener('error', () => picture.remove(), { once: true });
+    element.append(picture);
+  }).catch(() => {});
+}
 function showPlaytime(seconds = 0) { const minutes = Math.floor(seconds / 60); $('playtime').textContent = `${Math.floor(minutes / 60)} ч ${minutes % 60} мин`; }
 function current() { return { ...config, nickname: config.nickname, version: $('version').value.split('|')[0], memory: Number($('memory').value), snapshots: $('snapshots').checked, historical: $('historical').checked, loader: $('loader').value }; }
 function profileKey(profile) { return JSON.stringify([profile.gameDirectory, profile.version, profile.loader]); }
@@ -39,11 +53,16 @@ function updateControls() {
   const ready = versionsReady && Boolean($('version').value);
   $('play').disabled = locked || !ready;
   ['version', 'nickname', 'memory', 'snapshots', 'historical', 'choose-folder', 'save', 'loader', 'optifine-import', 'profiles-open'].forEach(id => $(id).disabled = locked);
-  $('mods-import').disabled = locked || !ready || !['forge', 'fabric', 'neoforge'].includes($('loader').value);
+  $('mods-import').disabled = locked || !ready || !['forge', 'forge_optifine', 'fabric', 'neoforge'].includes($('loader').value);
   $('refresh-versions').disabled = operationLocked || refreshingVersions;
   $('check-updates').disabled = operationLocked || checkingUpdate;
   $('launcher-update').disabled = operationLocked;
   $('shaders-open').disabled = locked || !ready;
+  $('mods-installed-tab').disabled = locked || !ready;
+  $('mods-catalog-tab').disabled = locked || !ready;
+  $('resources-tab').disabled = locked || !ready;
+  $('shaders-query').disabled = locked;
+  $('shaders-search').querySelector('button').disabled = locked;
   $('shaders-more').disabled = locked || shaderSearchBusy;
   document.querySelectorAll('.mod-card button, .shader-card button').forEach(el => el.disabled = locked || el.dataset.installed === 'true');
 }
@@ -68,7 +87,7 @@ function renderVersions() {
   const labels = { snapshot: ' · Тестовая', old_alpha: ' · Alpha / Classic', old_beta: ' · Beta' };
   const options = available.flatMap(v => {
     const items = [new Option(`${v.id}${labels[v.type] || ''}`, v.id)];
-    if (v.type === 'release') for (const [loader, title] of [['fabric', 'Fabric'], ['forge', 'Forge'], ['neoforge', 'NeoForge'], ['optifine', 'OptiFine']]) if (!loaderCatalog || !loaderCatalog[loader] || loaderCatalog[loader][v.id]) items.push(new Option(`${v.id} ${title}`, `${v.id}|${loader}`));
+    if (v.type === 'release') for (const [loader, title] of [['fabric', 'Fabric'], ['forge', 'Forge'], ['neoforge', 'NeoForge'], ['optifine', 'OptiFine'], ['forge_optifine', 'Forge + OptiFine']]) if (loader === 'forge_optifine' ? loaderCatalog?.forge_optifine?.[v.id] : !loaderCatalog || !loaderCatalog[loader] || loaderCatalog[loader][v.id]) items.push(new Option(`${v.id} ${title}`, `${v.id}|${loader}`));
     return items;
   });
   $('version').replaceChildren(...options);
@@ -99,7 +118,7 @@ api.onEvent(event => {
   if (event.kind === 'loaders-refreshed') { refreshedLoaders = event.data; applyCatalogRefresh(); return; }
   if (event.kind === 'playtime') showPlaytime(event.seconds);
   if (event.kind === 'mods-progress') {
-    modStatus(event.message); if ($('shaders-dialog').open) $('shaders-status').textContent = event.message + (event.percent === null ? '' : ' ' + Math.round(event.percent) + '%'); $('mods-progress').hidden = false;
+    modStatus(event.message); if (!$('shaders-panel').hidden) $('shaders-status').textContent = event.message + (event.percent === null ? '' : ' ' + Math.round(event.percent) + '%'); $('mods-progress').hidden = false;
     if (event.percent === null) $('mods-progress').removeAttribute('value'); else $('mods-progress').value = event.percent;
   }
   if (event.kind === 'update-progress') { $('launcher-update').textContent = 'Обновление ' + event.percent + '%'; $('update-status').textContent = 'Загрузка обновления: ' + event.percent + '%'; }
@@ -144,7 +163,7 @@ $('version').addEventListener('change', async () => {
 $('save').addEventListener('click', async () => {
   if (savingSettings || !config) return;
   savingSettings = true; updateControls();
-  try { config = await api.save(current()); $('profile-name').textContent = config.nickname; $('settings-status').textContent = 'Настройки сохранены.'; }
+  try { config = await api.save(current()); $('profile-name').textContent = config.nickname; updateAvatar(document.querySelector('.avatar'), config.nickname); $('settings-status').textContent = 'Настройки сохранены.'; }
   catch (error) { $('settings-status').textContent = error.message; }
   finally { savingSettings = false; applyCatalogRefresh(); updateControls(); }
 });
@@ -159,7 +178,7 @@ async function init() {
   try {
     config = await api.settings();
     showPlaytime(config.playtimeSeconds);
-    config.profiles ||= [config.nickname]; $('profile-name').textContent = config.nickname;
+    config.profiles ||= [config.nickname]; $('profile-name').textContent = config.nickname; updateAvatar(document.querySelector('.avatar'), config.nickname);
     $('memory').value = config.memory; $('snapshots').checked = config.snapshots; $('historical').checked = config.historical; $('loader').value = config.loader || 'vanilla'; $('game-path').textContent = config.gameDirectory;
     $('memory-hint').textContent = `На компьютере ${config.totalMemory} ГБ. Оставь минимум 1 ГБ для Windows.`;
     window.dispatchEvent(new Event('ui-settings-ready'));
@@ -180,7 +199,8 @@ function updateModProfile() {
   $('mods-version').textContent = $('version').selectedOptions[0]?.textContent || config.version;
   $('optifine-panel').hidden = true;
   $('loader-note').textContent = loader === 'vanilla' ? 'Для JAR-модов выбери Forge, NeoForge или Fabric.' : 'Загрузчик скачивается автоматически при нажатии «Играть».';
-  $('mods-selection').textContent = 'Установленные моды';
+  $('mods-selection').textContent = modsTab !== 'mods' ? catalogLabels[catalogKind()] : 'Установлено';
+  if (modsTab !== 'mods' && versionsReady && $('version').value && shaderProfile !== profileKey(current())) loadShaders();
 }
 function modMedia(hit, position = 0) {
   const media = document.createElement('div'); media.className = 'mod-media';
@@ -209,23 +229,29 @@ async function refreshInstalled() {
   const key = profileKey(profile);
   if ($('mods-installed-list').dataset.profile !== key) {
     $('mods-installed-list').dataset.profile = key;
-    $('mods-installed-list').replaceChildren(); modStatus('Загружаем список модов…');
+    $('mods-installed-list').replaceChildren(); modStatus('Загружаем установленное…');
   }
   try {
-    const list = await api.listMods(profile);
+    const list = await api.listInstalled(profile);
     if (request !== installedRequest || profileKey(profile) !== profileKey(current())) return;
+    modStatus('');
     $('mods-installed-list').replaceChildren(...list.map((mod, index) => {
-      const card = document.createElement('div'); card.className = `mod-card${mod.enabled ? '' : ' disabled'}`;
+      const card = document.createElement('div'); card.className = `mod-card${mod.kind !== 'mod' || mod.enabled ? '' : ' disabled'}`;
       const title = document.createElement('strong'); title.textContent = mod.title;
       const toggle = document.createElement('button'); toggle.className = 'secondary-button'; toggle.textContent = mod.enabled ? 'Выключить' : 'Включить'; toggle.disabled = busy || modsBusy;
       toggle.addEventListener('click', () => modOperation(async () => { await api.toggleMod(profile, mod.file); await refreshInstalled(); return mod.enabled ? 'Мод выключен.' : 'Мод включён.'; }));
-      const body = document.createElement('div'); body.className = 'mod-body'; body.append(title, toggle); card.append(modMedia(mod, index), body); return card;
+      const body = document.createElement('div'); body.className = 'mod-body';
+      const type = document.createElement('small'); type.className = 'installed-kind';
+      type.textContent = { mod: 'Мод', resourcepack: 'Ресурспак', shader: 'Шейдер' }[mod.kind] || 'Мод';
+      const info = document.createElement('div'); info.className = 'installed-info'; info.append(title, type);
+      body.append(info); if (mod.kind === 'mod') body.append(toggle);
+      card.append(modMedia(mod, index), body); return card;
     }));
     if (!list.length) {
       const empty = document.createElement('div'); empty.className = 'mods-empty';
       const icon = document.createElement('span'); icon.className = 'empty-mod-icon';
-      const title = document.createElement('strong'); title.textContent = 'Здесь будут твои моды';
-      const hint = document.createElement('p'); hint.textContent = ['forge','fabric','neoforge'].includes($('loader').value) ? 'Нажми «Добавить JAR», чтобы добавить моды в эту сборку.' : 'Выбери Forge, NeoForge или Fabric под кнопкой «Играть». Шейдеры доступны в соседней вкладке.';
+      const title = document.createElement('strong'); title.textContent = 'Пока ничего не установлено';
+      const hint = document.createElement('p'); hint.textContent = ['forge','forge_optifine','fabric','neoforge'].includes($('loader').value) ? 'Добавь JAR-моды или установи шейдер из соседней вкладки. Ресурспаки из папки сборки тоже появятся здесь.' : 'Шейдеры доступны в соседней вкладке. Для JAR-модов выбери Forge, NeoForge или Fabric.';
       empty.append(icon,title,hint); $('mods-installed-list').append(empty); modStatus('');
     }
     updateControls();
@@ -257,7 +283,7 @@ function renderProfiles() {
   $('profiles-count').textContent = config.profiles.length;
   $('profiles-list').replaceChildren(...config.profiles.map(name => {
     const row = document.createElement('div'); row.className = 'profile-row'; row.classList.toggle('selected', name === config.nickname);
-    const choose = document.createElement('button'); choose.className = 'profile-choice'; const avatar = document.createElement('span'); avatar.className = 'profile-card-avatar'; avatar.setAttribute('aria-hidden','true'); const label = document.createElement('span'); label.textContent = name; const detail = document.createElement('small'); detail.textContent = name === config.nickname ? 'Активный профиль' : 'Выбрать профиль'; const info = document.createElement('span'); info.append(label,detail); choose.append(avatar, info); choose.disabled = name === config.nickname;
+    const choose = document.createElement('button'); choose.className = 'profile-choice'; const avatar = document.createElement('span'); avatar.className = 'profile-card-avatar'; avatar.setAttribute('aria-hidden','true'); updateAvatar(avatar, name); const label = document.createElement('span'); label.textContent = name; const detail = document.createElement('small'); detail.textContent = name === config.nickname ? 'Активный профиль' : 'Выбрать профиль'; const info = document.createElement('span'); info.append(label,detail); choose.append(avatar, info); choose.disabled = name === config.nickname;
     choose.addEventListener('click', () => saveProfiles(config.profiles, name));
     const edit = document.createElement('button'); edit.className = 'secondary-button'; edit.textContent = 'Изменить'; edit.setAttribute('aria-label', `Изменить ${name}`);
     edit.addEventListener('click', () => { editingProfile = name; $('nickname').value = name; $('profiles-submit').textContent = 'Сохранить'; $('profiles-submit').disabled = false; $('profiles-cancel').hidden = false; $('nickname').focus(); });
@@ -273,7 +299,7 @@ async function saveProfiles(profiles, nickname) {
   $('profiles-dialog').querySelectorAll('button, input').forEach(el => el.disabled = true);
   try {
     config = await api.save({ ...current(), profiles, nickname });
-    $('profile-name').textContent = config.nickname;
+    $('profile-name').textContent = config.nickname; updateAvatar(document.querySelector('.avatar'), config.nickname);
     $('profiles-status').textContent = 'Сохранено.';
   } catch (error) { $('profiles-status').textContent = error.message; }
   finally {
@@ -304,11 +330,12 @@ let shaderOffset = 0, shaderTotal = 0, shaderRequest = 0;
 const installedShaders = new Set();
 async function loadShaders(append = false) {
   const request = ++shaderRequest;
-  const profile = current();
+  const profile = current(), kind = catalogKind();
+  shaderProfile = profileKey(profile);
   if (!append) { shaderOffset = 0; $('shaders-results').replaceChildren(); }
   shaderSearchBusy = true; $('shaders-more').disabled = true; $('shaders-status').textContent = 'Загружаем каталог…';
   try {
-    const data = await api.searchShaders(profile, $('shaders-query').value, shaderOffset);
+    const data = kind === 'shader' ? await api.searchShaders(profile, $('shaders-query').value, shaderOffset) : await api.searchCatalog(profile, kind, $('shaders-query').value, shaderOffset);
     if (request !== shaderRequest || profileKey(profile) !== profileKey(current())) return;
     shaderTotal = data.total; shaderOffset += data.hits.length;
     for (const [i, hit] of data.hits.entries()) {
@@ -318,26 +345,59 @@ async function loadShaders(append = false) {
       const description = document.createElement('p'); description.textContent = hit.description;
       const author = document.createElement('small'); author.textContent = hit.author + ' · ' + Number(hit.downloads).toLocaleString('ru-RU') + ' загрузок';
       const button = document.createElement('button'); button.className = 'secondary-button'; button.type = 'button';
-      const key = profileKey(profile) + '|' + hit.id;
+      const key = profileKey(profile) + '|' + kind + '|' + hit.id;
       button.dataset.installed = String(installedShaders.has(key));
       button.textContent = installedShaders.has(key) ? 'Установлено' : 'Установить'; button.disabled = installedShaders.has(key) || busy || modsBusy;
       button.addEventListener('click', async () => {
-        if (busy || modsBusy || profileKey(profile) !== profileKey(current())) return;
+        if (busy || modsBusy || kind !== catalogKind() || profileKey(profile) !== profileKey(current())) return;
         modsBusy = true; setBusy(busy); document.querySelectorAll('.shader-card button').forEach(b => b.disabled = true); button.textContent = 'Скачиваем…';
-        try { await api.installShader(profile, hit.id); installedShaders.add(key); button.dataset.installed = 'true'; button.textContent = 'Установлено'; $('shaders-status').textContent = hit.title + ' установлен. Выбери его в настройках шейдеров Minecraft.'; }
+        try { if (kind === 'shader') await api.installShader(profile, hit.id); else await api.installCatalog(profile, kind, hit.id); installedShaders.add(key); button.dataset.installed = 'true'; button.textContent = 'Установлено'; $('shaders-status').textContent = hit.title + (kind === 'mod' ? ' установлен. Будет подключён при следующем запуске игры.' : ' установлен. Выбери его в настройках ' + (kind === 'shader' ? 'шейдеров' : 'ресурспаков') + ' Minecraft.'); }
         catch (error) { button.textContent = 'Установить'; $('shaders-status').textContent = error.message; }
         finally { modsBusy = false; setBusy(busy); updateModProfile(); $('mods-progress').hidden = true; }
       });
       body.append(title, description, author, button); card.append(modMedia(hit,i), body); $('shaders-results').append(card);
     }
-    $('shaders-status').textContent = shaderOffset ? 'Показано ' + shaderOffset + ' из ' + shaderTotal : 'Для этой версии шейдеры не найдены. Попробуй другую версию Minecraft.';
+    $('shaders-status').textContent = data.message || (shaderOffset ? 'Показано ' + shaderOffset + ' из ' + shaderTotal : 'Для этой версии ничего не найдено. Попробуй другой запрос или версию Minecraft.');
     $('shaders-more').hidden = shaderOffset >= shaderTotal || !data.hits.length;
-  } catch (error) { if (request === shaderRequest) $('shaders-status').textContent = error.message; }
+  } catch (error) { if (request === shaderRequest) { shaderProfile = null; $('shaders-status').textContent = error.message; } }
   finally { if (request === shaderRequest) { shaderSearchBusy = false; updateControls(); } }
 }
-$('shaders-open').addEventListener('click', () => { if (!versionsReady || busy || modsBusy) return; $('shaders-dialog').showModal(); loadShaders(); });
-$('shaders-close').addEventListener('click', () => $('shaders-dialog').close());
-$('shaders-dialog').addEventListener('click', event => { if (event.target === $('shaders-dialog')) { const r = event.target.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) event.target.close(); } });
+function selectModsTab(name) {
+  if (!versionsReady || busy || modsBusy) return;
+  modsTab = name;
+  const shaders = name !== 'mods';
+  $('shaders-title').textContent = catalogLabels[catalogKind()];
+  $('shaders-query').placeholder = name === 'mod-catalog' ? 'Найти мод…' : name === 'resources' ? 'Найти ресурспак…' : 'Найти шейдер…';
+  $('shaders-query').setAttribute('aria-label', $('shaders-query').placeholder);
+  $('shaders-panel').setAttribute('aria-labelledby', contentTabs.find(tab => tab[1] === name)[0]);
+  $('shaders-panel').querySelector('.shader-hint').textContent = name === 'mod-catalog' ? 'Моды для выбранной версии и загрузчика. Обязательные зависимости устанавливаются автоматически.' : name === 'resources' ? 'Ресурспаки для выбранной версии Minecraft. После установки включи набор в настройках игры.' : 'Для выбранной версии Minecraft · Нужен Iris или OptiFine. После установки выбери шейдер в настройках игры.';
+  $('shaders-query').value = '';
+  $('shaders-panel').scrollTop = 0;
+  $('mods-installed').hidden = shaders;
+  $('shaders-panel').hidden = !shaders;
+  $('mods-import').classList.toggle('inactive-action', shaders);
+  modStatus('');
+  for (const [id, tab] of contentTabs) {
+    const active = tab === name;
+    $(id).classList.toggle('active', active);
+    $(id).setAttribute('aria-selected', String(active));
+    $(id).tabIndex = active ? 0 : -1;
+  }
+  $('mods-selection').textContent = shaders ? catalogLabels[catalogKind()] : 'Установлено';
+  if (shaders) loadShaders(); else refreshInstalled();
+}
+$('shaders-open').addEventListener('click', () => selectModsTab('shaders'));
+$('mods-installed-tab').addEventListener('click', () => selectModsTab('mods'));
+$('mods-catalog-tab').addEventListener('click', () => selectModsTab('mod-catalog'));
+$('resources-tab').addEventListener('click', () => selectModsTab('resources'));
+document.querySelector('.mods-tabs').addEventListener('keydown', event => {
+  if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) || busy || modsBusy) return;
+  event.preventDefault();
+  const index = contentTabs.findIndex(tab => tab[1] === modsTab);
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? contentTabs.length - 1 : (index + (event.key === 'ArrowLeft' ? -1 : 1) + contentTabs.length) % contentTabs.length;
+  selectModsTab(contentTabs[next][1]);
+  $(contentTabs[next][0]).focus();
+});
 $('shaders-search').addEventListener('submit', event => { event.preventDefault(); if (!modsBusy) loadShaders(); });
 $('shaders-more').addEventListener('click', () => { if (!shaderSearchBusy) loadShaders(true); });
 

@@ -7,7 +7,7 @@ function officialUrl(value, base = 'https://optifine.net/') {
   if (url.protocol !== 'https:' || url.hostname !== 'optifine.net') throw new Error('Некорректная ссылка OptiFine.');
   return url.href;
 }
-async function downloadOptifine(config, send = () => {}, request = fetch) {
+async function downloadOptifine(config, send = () => {}, request = fetch, selectedFile) {
   const get = async url => {
     const response = await request(officialUrl(url), { signal: AbortSignal.timeout(120000), headers: { 'User-Agent': 'KOPEYKA-Launcher' } });
     if (!response.ok) throw new Error(`OptiFine: HTTP ${response.status}`);
@@ -15,7 +15,8 @@ async function downloadOptifine(config, send = () => {}, request = fetch) {
     return response;
   };
   const catalog = parseCatalog('optifine', await (await get('https://optifine.net/downloads')).text());
-  const name = catalog[config.version];
+  const name = selectedFile || catalog[config.version];
+  if (selectedFile && !new RegExp('^(?:preview_)?OptiFine_' + config.version.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '_HD_U_[A-Za-z0-9_]+\\.jar$').test(selectedFile)) throw new Error('Некорректная версия OptiFine.');
   if (!name) throw new Error(`OptiFine для Minecraft ${config.version} ещё не выпущен. Выбери другую версию или загрузчик.`);
   const mirror = await (await get(`https://optifine.net/adloadx?f=${encodeURIComponent(name)}`)).text();
   const link = /href=['"](downloadx\?[^'"]+)['"]/i.exec(mirror)?.[1];

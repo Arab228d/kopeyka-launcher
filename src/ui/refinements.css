@@ -1,0 +1,35 @@
+/* Layout for inline catalogs; visual frames come from release v0.1.4-beta. */
+#mods { padding: 22px 22px 16px; gap: 16px; }
+.mods-heading { min-height: 56px; justify-content: flex-end; padding-bottom: 10px; }
+.mods-branding { width: 170px; }
+.inactive-action { visibility: hidden; pointer-events: none; }
+.mods-tabs { gap: 8px; border: 0; padding: 0; }
+#mods .mods-tabs .secondary-button { min-width: 0; min-height: 40px; padding: 10px 16px; }
+#mods-installed, #shaders-panel { flex: 1; min-height: 0; padding: 20px; overflow-y: auto; scrollbar-color: #7994a7 #142332; border: 8px solid transparent; border-image: var(--frame-normal) 12 / 10px / 0 stretch; background: #10223155; }
+.mods-profile { padding: 15px 18px; }
+.mods-empty { min-height: 230px; }
+.mods-footer { padding: 0 2px; }
+.installed-info { flex: 1; min-width: 0; }
+.installed-kind { display: block; margin-top: 8px; color: #b4c9d8; font: 11px/1.5 'Segoe UI',sans-serif; }
+#shaders-panel .shader-heading { margin-bottom: 8px; }
+#shaders-panel .shader-heading h2 { font: 14px/1.7 PlayPixel,monospace; margin: 0; }
+#shaders-panel .shader-hint { margin: 0 0 18px; font: 12px/1.7 'Segoe UI',sans-serif; color: #b7cbd9; }
+#shaders-panel .mods-search { position: sticky; top: -20px; z-index: 2; padding: 8px 0; background: #182a3b; }
+#shaders-results { grid-template-columns: repeat(auto-fill,minmax(260px,1fr)); align-items: stretch; grid-auto-rows: 1fr; }
+#shaders-results .shader-card { display: flex; flex-direction: column; min-width: 0; height: 100%; }
+#shaders-results .shader-card .mod-media { flex: 0 0 160px; height: 160px; }
+#shaders-results .shader-card .mod-body { display: flex; flex-direction: column; gap: 10px; flex: 1; padding: 14px; }
+#shaders-results .shader-card strong { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; line-height: 1.4; min-height: 42px; }
+#shaders-results .shader-card p { margin: 0; line-height: 1.5; min-height: 54px; -webkit-line-clamp: 3; }
+#shaders-results .shader-card small { margin: 0; min-height: 18px; }
+#shaders-results .shader-card .secondary-button { margin-top: auto; flex-shrink: 0; min-height: 40px; }
+
+.avatar, .profile-card-avatar { position: relative; overflow: hidden; }
+.skin-avatar { position: absolute; inset: 0; z-index: 1; width: 100%; height: 100%; object-fit: cover; image-rendering: pixelated; }
+.profile-card-avatar .skin-avatar { display: block; }
+.profile:has(.skin-avatar) .avatar::before, .profile:has(.skin-avatar) .avatar::after,
+.profile:has(.skin-avatar) .avatar i { display: none; }
+#mods .mod-cover { image-rendering: auto; }
+
+
+@media(max-width:1100px) { #mods { padding: 16px; } .mods-branding { position: static; transform: none; width: 150px; } .mods-heading { gap: 14px; justify-content: space-between; } #mods-import { max-width: 150px; } }

@@ -49,8 +49,16 @@ async function prepareLoader(config, metadata, java, send) {
   const gameDirectory = profileDirectory(config);
   await fs.mkdir(gameDirectory, { recursive: true });
   const marker = path.join(gameDirectory, 'loader-installed.json');
-  let id;
-  try { const cached = JSON.parse(await fs.readFile(marker, 'utf8')); id = cached.id; await fs.access(inside(root, `versions/${id}/${id}.json`)); } catch { id = null; }
+  let id, combo;
+  try { const cached = JSON.parse(await fs.readFile(marker, 'utf8')); id = cached.id; combo = cached.combo; await fs.access(inside(root, `versions/${id}/${id}.json`)); } catch { id = null; }
+  if (config.loader === 'forge_optifine' && (!id || !combo)) {
+    const catalog = await fetchCatalog(path.join(root, '.catalog'));
+    combo = catalog.forge_optifine?.[config.version];
+    if (!combo) throw new Error('Для этой версии нет подтверждённой совместимости Forge + OptiFine. Выбери другую версию.');
+    id = null;
+  }
+  if (config.loader !== 'forge_optifine') combo = null;
+  if (combo) validateCombo(config, combo);
   if (!id) {
     send({ kind: 'progress', percent: null, message: `Установка ${config.loader} для ${config.version}…` });
     if (config.loader === 'fabric') {
@@ -60,8 +68,8 @@ async function prepareLoader(config, metadata, java, send) {
       id = profile.id;
       const directory = inside(root, `versions/${id}`); await fs.mkdir(directory, { recursive: true });
       await fs.writeFile(inside(directory, `${id}.json`), JSON.stringify(profile));
-    } else if (config.loader === 'forge') {
-      const choices = await loaderChoices(config.version);
+    } else if (config.loader === 'forge' || config.loader === 'forge_optifine') {
+      const choices = combo ? { forge: combo.forge } : await loaderChoices(config.version);
       if (!choices.forge) throw new Error('Forge недоступен для этой версии или сервер не отвечает.');
       const full = `${config.version}-${choices.forge}`, url = `${FORGE}/${full}/forge-${full}-installer.jar`;
       const checksum = await fetch(`${url}.sha1`, { signal: AbortSignal.timeout(30000) });
@@ -100,8 +108,10 @@ async function prepareLoader(config, metadata, java, send) {
       if (installed.inheritsFrom !== config.version) throw new Error('OptiFine не создал профиль для выбранной версии.');
     }
     await fs.access(inside(root, `versions/${id}/${id}.json`));
-    await fs.writeFile(marker, JSON.stringify({ id }));
+    if (combo) await installForgeOptifine(config, combo, send);
+    await fs.writeFile(marker, JSON.stringify({ id, ...(combo ? { combo } : {}) }));
   }
+  else if (combo && config.loader === 'forge_optifine') await installForgeOptifine(config, combo, send);
   const file = inside(root, `versions/${id}/${id}.json`);
   const profile = JSON.parse(await fs.readFile(file, 'utf8'));
   const combined = { ...profile, arguments: { ...metadata.arguments, ...profile.arguments, game: [...(metadata.arguments?.game || []), ...(profile.arguments?.game || [])] } };
@@ -120,4 +130,28 @@ async function ensureLauncherProfiles(root) {
   const file = path.join(root, 'launcher_profiles.json');
   try { await fs.access(file); } catch { await fs.writeFile(file, JSON.stringify({ profiles: {}, selectedProfile: '', clientToken: '', authenticationDatabase: {}, launcherVersion: { name: 'KOPEYKA', format: 21 } })); }
 }
-module.exports = { loaderChoices, prepareLoader, importOptifine, runJava };
+async function installForgeOptifine(config, combo, send = () => {}, request = fetch) {
+  validateCombo(config, combo);
+  const cached = inside(config.gameDirectory, 'installers/' + combo.optifine);
+  let bytes;
+  try {
+    bytes = await fs.readFile(cached);
+    const zip = new AdmZip(bytes);
+    if (!zip.getEntry('optifine/Installer.class') || !zip.test()) bytes = null;
+  } catch { bytes = null; }
+  if (!bytes) bytes = await fs.readFile(await downloadOptifine(config, send, request, combo.optifine));
+  const directory = path.join(profileDirectory(config), 'mods');
+  await fs.mkdir(directory, { recursive: true });
+  const target = path.join(directory, combo.optifine);
+  try { await fs.writeFile(target, bytes, { flag: 'wx' }); }
+  catch (error) {
+    if (error.code !== 'EEXIST') throw error;
+    if (!bytes.equals(await fs.readFile(target))) throw new Error('В сборке уже есть другой файл OptiFine с таким именем.');
+  }
+  return target;
+}
+function validateCombo(config, combo) {
+  const match = /^(?:preview_)?OptiFine_([A-Za-z0-9.\-]+)_HD_U_[A-Za-z0-9_]+\.jar$/.exec(combo?.optifine || '');
+  if (!match || match[1] !== config.version || !/^\d+(?:\.\d+){2,3}$/.test(combo.forge)) throw new Error('Некорректная связка Forge + OptiFine.');
+}
+module.exports = { loaderChoices, prepareLoader, importOptifine, runJava, installForgeOptifine };

@@ -18,9 +18,10 @@ const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 app.whenReady().then(async () => {
   try {
     await fs.mkdir(output, { recursive: true });
+    ipcMain.handle('launcher:avatar', () => null);
     ipcMain.handle('launcher:settings', async () => { await delay(1200); return { nickname: 'Player', memory: 4, version: '1.21.1', snapshots: false, gameDirectory: path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft'), totalMemory: 16 }; });
     ipcMain.handle('launcher:versions', () => ({ latest: { release: '26.3' }, versions: [{ id: '26.4-snapshot', type: 'snapshot' }, { id: '26.3', type: 'release' }, { id: '1.21.1', type: 'release' }, { id: '1.21-pre1', type: 'snapshot' }, { id: '1.20.1', type: 'release' }, { id: 'b1.7.3', type: 'old_beta' }, { id: 'a1.2.6', type: 'old_alpha' }] }));
-    ipcMain.handle('launcher:loader-catalog', () => ({fabric: {'26.3':true, '1.21.1':true, '1.20.1':true}, forge:{'1.21.1':'52.0.16'}, neoforge:{'1.21.1':'21.1.257'},optifine:{'1.21.1':'OptiFine_1.21.1_HD_U_J1.jar'},errors:[]}));
+    ipcMain.handle('launcher:loader-catalog', () => ({fabric: {'26.3':true, '1.21.1':true, '1.20.1':true}, forge:{'1.21.1':'52.0.16'}, neoforge:{'1.21.1':'21.1.257'},optifine:{'1.21.1':'OptiFine_1.21.1_HD_U_J1.jar'},forge_optifine:{'1.21.1':{forge:'52.0.16',optifine:'OptiFine_1.21.1_HD_U_J1.jar'}},errors:[]}));
     ipcMain.handle('launcher:release-news', () => ({version:'0.1.1-beta',body:'Новый редактор профилей\nПиксельные карточки и стеклянное окно.',unread:false}));
     ipcMain.handle('launcher:release-news-seen', () => {});
     ipcMain.handle('launcher:update-check', () => ({version:'0.4.0'}));
@@ -28,10 +29,13 @@ app.whenReady().then(async () => {
     let savedSettings;
     ipcMain.handle('launcher:save', (_, input) => { savedSettings = require('../src/config').validateSettings(input, input); return savedSettings; });
     let installedMods = [];
+    const catalogInstalls = [];
+    ipcMain.handle('launcher:catalog-search', (_, profile, kind) => { assert.equal(profile.loader, 'fabric'); return { total: 1, hits: [{ id: 'catalog-' + kind, title: kind === 'mod' ? 'Fabric mod' : 'Texture pack', description: 'Catalog fixture', author: 'Artist', downloads: 10, gallery: [] }] }; });
+    ipcMain.handle('launcher:catalog-install', (_, profile, kind, project) => { assert.equal(profile.version, '1.21.1'); catalogInstalls.push(kind); return { file: project }; });
     let shaderInstalled = false;
-    ipcMain.handle('launcher:shaders-search', (_, input, query, offset) => ({ total: 2, hits: [{ id: 'shaderA' + offset, title: 'Shader Preview', description: 'Soft light and clear water', author: 'Artist', downloads: 15000, icon: require('../src/ui/assets/island-textures.json').textures.dirt, gallery: [] }] }));
+    ipcMain.handle('launcher:shaders-search', (_, input, query, offset) => ({ total: 6, hits: Array.from({ length: offset ? 1 : 5 }, (_, index) => ({ id: 'shaderA' + (offset + index), title: index % 2 ? 'A shader with a longer title on two lines' : 'Shader Preview', description: index % 2 ? 'Soft light, clear water and detailed shadows in every world.' : 'Soft light and clear water', author: 'Artist', downloads: 15000, icon: require('../src/ui/assets/island-textures.json').textures.dirt, gallery: [] })) }));
     ipcMain.handle('launcher:shaders-install', (_, input, project) => { assert.equal(input.version, '1.21.1'); assert.equal(project, 'shaderA0'); shaderInstalled = true; return {file:'shader.zip'}; });
-    ipcMain.handle('launcher:mods-list', () => installedMods);
+    ipcMain.handle('launcher:content-list', () => installedMods.map(mod => ({ ...mod, kind: 'mod' })));
     ipcMain.handle('launcher:mods-import', (_, input) => { assert.equal(input.loader, 'fabric'); installedMods = [{ file: 'local.jar', title: 'Local mod', enabled: true, icon: require('../src/ui/assets/island-textures.json').textures.dirt }]; return ['local.jar']; });
     ipcMain.handle('launcher:mods-toggle', () => { installedMods[0].enabled = !installedMods[0].enabled; });
     ipcMain.handle('launcher:textures', () => process.env.KOPEYKA_UI_NO_TEXTURES ? { source: 'fallback', textures: {} } : loadMinecraftTextures([path.join(app.getPath('appData'), 'KOPEYKA', 'minecraft')], output, '1.21.1'));
@@ -53,6 +57,7 @@ app.whenReady().then(async () => {
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('version').options[0].value"), '26.3');
     assert.equal(await window.webContents.executeJavaScript("!!document.querySelector('#version option[value=\"26.3|optifine\"]')"), false);
     assert.equal(await window.webContents.executeJavaScript("!!document.querySelector('#version option[value=\"1.21.1|neoforge\"]')"), true);
+    assert.equal(await window.webContents.executeJavaScript("!!document.querySelector('#version option[value=\"1.21.1|forge_optifine\"]')"), true);
     assert.equal(await window.webContents.executeJavaScript("!document.querySelector('.app-shell').inert && !document.getElementById('startup-overlay')"), true, 'Startup reveals the UI and removes the splash');
     async function read() {
       return window.webContents.executeJavaScript(`(() => {
@@ -142,15 +147,27 @@ app.whenReady().then(async () => {
     await fs.writeFile(path.join(output,'mods-glass.png'), (await window.webContents.capturePage()).toPNG());
     await window.webContents.executeJavaScript("document.getElementById('shaders-open').click()");
     await delay(450);
-    assert.equal(await window.webContents.executeJavaScript("document.getElementById('shaders-dialog').open"), true);
-    assert.equal(await window.webContents.executeJavaScript("getComputedStyle(document.getElementById('shaders-dialog'),'::backdrop').backdropFilter.includes('blur')"), true);
+    assert.equal(await window.webContents.executeJavaScript("!document.getElementById('shaders-panel').hidden && document.getElementById('mods-installed').hidden"), true);
+    assert.equal(await window.webContents.executeJavaScript("document.querySelector('dialog[open]') === null && document.getElementById('shaders-panel').closest('#mods') !== null && document.getElementById('shaders-open').getAttribute('aria-selected') === 'true'"), true);
     await fs.writeFile(path.join(output,'shaders-catalog.png'), (await window.webContents.capturePage()).toPNG());
+    window.setSize(1920, 1080); await delay(400);
+    assert.equal(await window.webContents.executeJavaScript("(() => { const cards=[...document.querySelectorAll('.shader-card')];const first=cards[0].getBoundingClientRect(); const row=cards.filter(c=>Math.abs(c.getBoundingClientRect().top-first.top)<2);const bottoms=row.map(c=>c.querySelector('button.secondary-button').getBoundingClientRect().bottom);return row.length>=3 && Math.max(...bottoms)-Math.min(...bottoms)<2; })()"), true, 'Shader install buttons align across cards with different title lengths');
+    await fs.writeFile(path.join(output, 'shaders-aligned.png'), (await window.webContents.capturePage()).toPNG());
+    window.setSize(1020, 720); await delay(200);
     await window.webContents.executeJavaScript("document.querySelector('.shader-card .secondary-button').click()");
     await delay(150); assert.equal(shaderInstalled,true);
     assert.equal(await window.webContents.executeJavaScript("document.querySelector('.shader-card .secondary-button').textContent"), 'Установлено');
     await window.webContents.executeJavaScript("document.getElementById('shaders-more').click()"); await delay(100);
-    assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.shader-card').length"), 2);
-    await window.webContents.executeJavaScript("document.getElementById('shaders-close').click()"); await delay(300);
+    assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.shader-card').length"), 6);
+    for (const [tab, kind] of [['mods-catalog-tab', 'mod'], ['resources-tab', 'resourcepack']]) {
+      await window.webContents.executeJavaScript(`document.getElementById('${tab}').click()`); await delay(150);
+      assert.equal(await window.webContents.executeJavaScript(`document.getElementById('${tab}').getAttribute('aria-selected')`), 'true');
+      assert.equal(await window.webContents.executeJavaScript("document.querySelector('dialog[open]') === null && !document.getElementById('shaders-panel').hidden"), true);
+      await window.webContents.executeJavaScript("document.querySelector('.shader-card .secondary-button').click()"); await delay(150);
+      assert.equal(catalogInstalls.at(-1), kind);
+    }
+    await window.webContents.executeJavaScript("document.getElementById('mods-installed-tab').click()"); await delay(300);
+    assert.equal(await window.webContents.executeJavaScript("!document.getElementById('mods-installed').hidden && document.getElementById('shaders-panel').hidden && document.getElementById('mods-installed-tab').getAttribute('aria-selected') === 'true'"), true, 'Mod tab restores the inline panel');
     assert.equal(savedSettings.useLatestRelease, false);
     assert.equal(savedSettings.version, '1.21.1'); assert.equal(savedSettings.loader, 'fabric');
     assert.ok(await window.webContents.executeJavaScript("[...document.querySelectorAll('#mods-installed-list .mod-cover')].some(i=>i.complete && i.naturalWidth>0)"), 'Local mod icon loads');

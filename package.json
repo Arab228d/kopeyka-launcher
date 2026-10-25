@@ -1,31 +1,29 @@
 {
   "name": "kopeyka-launcher",
-  "version": "0.1.4-beta",
+  "version": "0.1.5-beta",
   "description": "KOPEYKA Laucher — Minecraft Java launcher for Windows",
   "main": "src/main.js",
   "author": "KOPEYKA",
   "private": true,
   "scripts": {
     "start": "electron .",
-    "build:scene": "esbuild src/scene/scene.js --bundle --minify --format=iife --outfile=src/ui/scene.bundle.js",
-    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js test/shaders.test.js test/catalog-updates.test.js test/optifine.test.js test/persistence.test.js test/release-news.test.js test/background-catalog.test.js",
+    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js test/shaders.test.js test/catalog-updates.test.js test/optifine.test.js test/persistence.test.js test/release-news.test.js test/background-catalog.test.js test/installed-content.test.js test/content-media.test.js test/catalog.test.js",
     "test:ui": "electron test/ui-smoke.cjs && electron test/ui-state.cjs",
     "build": "npm run build:installer",
     "build:installer": "npm run prepare:runtimes && electron-builder --win nsis --x64",
     "prepare:runtimes": "node scripts/prepare-runtimes.cjs",
     "build:portable": "npm run prepare:runtimes && electron-builder --win portable --x64",
     "test:lifecycle": "electron test/lifecycle.cjs",
-    "test:performance": "electron test/ui-performance.cjs"
+    "test:performance": "electron test/ui-performance.cjs",
+    "test:game": "node test/game-integration.cjs"
   },
   "dependencies": {
     "adm-zip": "0.6.1",
     "minecraft-launcher-core": "3.18.2"
   },
   "devDependencies": {
-    "electron": "44.7.0",
-    "electron-builder": "26.15.3",
-    "esbuild": "^0.28.2",
-    "three": "^0.186.1"
+    "electron": "44.9.3",
+    "electron-builder": "26.15.3"
   },
   "build": {
     "appId": "ru.kopeyka.launcher",
@@ -35,9 +33,8 @@
     },
     "files": [
       "src/**/*",
-      "!src/scene/**/*",
-      "!src/ui/scene.bundle.js",
-      "package.json"
+      "package.json",
+      "!src/**/*.java"
     ],
     "win": {
       "target": "nsis",

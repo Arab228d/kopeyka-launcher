@@ -4,7 +4,7 @@
 #home:not([hidden]) .world-menu { animation: home-arrive 280ms ease-out; }
 body.launch-transition #home .world-menu { animation: none; }
 .nav-button, .launch-side, .profile, .secondary-button, .profile-choice {
-  transition: transform 180ms var(--ui-ease), border-color 180ms ease, color 180ms ease, background-color 180ms ease, opacity 180ms ease;
+  transition: transform 120ms var(--ui-ease), color 120ms ease, opacity 120ms ease;
 }
 .nav-button:hover:not(:disabled), .launch-side:hover:not(:disabled), .profile:hover:not(:disabled), .secondary-button:hover:not(:disabled) { transform: translateY(-2px); }
 .nav-button:active:not(:disabled), .launch-side:active:not(:disabled), .profile:active:not(:disabled), .secondary-button:active:not(:disabled) { transform: translateY(1px); transition-duration: 70ms; }
