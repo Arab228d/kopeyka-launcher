@@ -78,7 +78,11 @@ function systemLanguage(preferred, available) {
 }
 async function prepareGameData(root, gameDirectory, metadata, preferred) {
   await fs.mkdir(gameDirectory, { recursive: true });
-  await shareWorlds(root);
+  try { await shareWorlds(root); }
+  catch (error) {
+    // Shared worlds are optional. Unsupported filesystems must not block launch.
+    if (!['EPERM', 'EACCES', 'ENOTSUP', 'EXDEV'].includes(error.code)) throw error;
+  }
   // New profiles inherit the latest preferences; existing profile options also
   // follow changes made during the most recent completed game session.
   const options = [];

@@ -231,8 +231,9 @@ app.whenReady().then(async () => {
       const memory = launchMemory(config.memory, os.totalmem(), os.freemem());
       log(`Память Java: ${memory} ГБ (выбрано ${config.memory} ГБ). Java: ${javaPath}`);
       const client = new GameClient();
-      let ready = false, startupFailed = false, hiddenForGame = false;
+      let ready = false, startupFailed = false, hiddenForGame = false, readyTimer;
       function closeWhenReady() {
+        if (ready) clearTimeout(readyTimer);
         if (ready && !startupFailed && game && !hiddenForGame) {
           hiddenForGame = true;
           log('Окно игры инициализировано. Лаунчер скрыт до завершения игры.');
@@ -255,6 +256,15 @@ app.whenReady().then(async () => {
       if (!child?.pid) throw launchError || new Error('Minecraft не запустился. Подробности в журнале.');
       game = child;
       playtime.start();
+      // Some clients do not print the usual renderer/audio readiness line.
+      // Do not leave the launcher covering a running game forever.
+      readyTimer = setTimeout(() => {
+        if (game === child && !startupFailed && !hiddenForGame) {
+          ready = true;
+          log('Строка готовности Minecraft не найдена, скрываем лаунчер по таймауту.');
+          closeWhenReady();
+        }
+      }, 30000);
       child.once('error', error => { startupFailed = true; send({ kind: 'error', message: error.message }); });
       let finished = false;
       const finishedGame = async (code, signal) => {
