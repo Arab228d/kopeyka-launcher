@@ -44,11 +44,12 @@ app.whenReady().then(async () => {
     const errors = [];
     window.webContents.on('console-message', event => { if (event.level === 'error') errors.push(event.message); });
     await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'splash.html'));
-    await window.webContents.executeJavaScript("document.querySelector('.startup-logo').decode()");
+    assert.equal(await window.webContents.executeJavaScript("document.querySelectorAll('.startup-face').length"), 6, 'Splash has a real six-face 3D cube');
+    await window.webContents.executeJavaScript("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
     await fs.writeFile(path.join(output, 'startup-logo.png'), (await window.webContents.capturePage()).toPNG());
     await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
     assert.equal(await window.webContents.executeJavaScript("document.body.classList.contains('booting') && document.querySelector('.app-shell').inert && !!document.getElementById('startup-overlay')"), true, 'Splash covers UI while local settings load');
-    await delay(2200);
+    await delay(9800);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('launcher-update').hidden"), false);
     await window.webContents.executeJavaScript("document.getElementById('launcher-update').click()"); await delay(100);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('play').disabled"), false);

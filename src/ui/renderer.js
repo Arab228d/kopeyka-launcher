@@ -6,6 +6,7 @@ const contentTabs = [['mods-installed-tab', 'mods'], ['mods-catalog-tab', 'mod-c
 const catalogKind = () => modsTab === 'mod-catalog' ? 'mod' : modsTab === 'resources' ? 'resourcepack' : 'shader';
 const catalogLabels = { shader: 'Шейдеры', mod: 'Моды', resourcepack: 'Ресурспаки' };
 const api = window.launcher;
+const startupCheck = (key, operation, describe) => window.startup ? window.startup.check(key, operation, describe) : operation;
 let refreshedVersions = null, refreshedLoaders = null;
 function acceptVersions(result) {
   const latest = result.versions.find(v => v.id === result.latest?.release && v.type === 'release') || result.versions.find(v => v.type === 'release');
@@ -176,13 +177,16 @@ $('clear-log').addEventListener('click', () => { clearTimeout(logTimer); logTime
 $('export-log').addEventListener('click', async () => { try { const file = await api.exportLog(); if (file) log(`Журнал сохранён: ${file}`); } catch (error) { log(error.message); } });
 async function init() {
   try {
-    config = await api.settings();
+    config = await startupCheck('settings', api.settings(), () => ({ text: 'Загружены' }));
     showPlaytime(config.playtimeSeconds);
     config.profiles ||= [config.nickname]; $('profile-name').textContent = config.nickname; updateAvatar(document.querySelector('.avatar'), config.nickname);
     $('memory').value = config.memory; $('snapshots').checked = config.snapshots; $('historical').checked = config.historical; $('loader').value = config.loader || 'vanilla'; $('game-path').textContent = config.gameDirectory;
     $('memory-hint').textContent = `На компьютере ${config.totalMemory} ГБ. Оставь минимум 1 ГБ для Windows.`;
     window.dispatchEvent(new Event('ui-settings-ready'));
-    const [result, catalog] = await Promise.all([api.versions(), api.loaderCatalog().catch(error => { log(error.message); return null; })]);
+    const [result, catalog] = await Promise.all([
+      startupCheck('versions', api.versions(), value => ({ state: value.source === 'cache' ? 'cache' : 'done', text: value.source === 'cache' ? 'Сохранённый список' : 'Список получен' })),
+      startupCheck('loaders', api.loaderCatalog(), value => ({ state: value.source === 'cache' ? 'cache' : value.errors?.length ? 'warning' : 'done', text: value.source === 'cache' ? 'Сохранённый каталог' : value.errors?.length ? 'Часть серверов недоступна' : 'Каталог получен' })).catch(error => { log(error.message); return null; })
+    ]);
     loaderCatalog = catalog;
     acceptVersions(result);
     $('version').value = ''; renderVersions(); versionsReady = true; updateModProfile(); setBusy(false);
@@ -405,7 +409,7 @@ async function checkLauncherUpdate() {
   if (updating || checkingUpdate) return;
   checkingUpdate = true; updateControls();
   try {
-    updateAvailable = await api.checkUpdate();
+    updateAvailable = await startupCheck('updates', api.checkUpdate(), value => ({ text: value ? 'Доступна ' + value.version : 'Актуальная версия' }));
     $('launcher-update').hidden = !updateAvailable;
     $('launcher-update').textContent = updateAvailable ? 'Обновить до ' + updateAvailable.version : 'Обновить';
     $('check-updates').textContent = updateAvailable ? 'Обновить лаунчер' : 'Проверить лаунчер';

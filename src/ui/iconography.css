@@ -1,0 +1,36 @@
+/* One outlined pixel palette for launcher controls. */
+.nav-icon, .action-icon, .log-empty-icon, .empty-mod-icon {
+  mask: none;
+  image-rendering: pixelated;
+}
+[data-page=home] .nav-icon { background: url('assets/generated-icons/creeper.png') center / contain no-repeat; }
+[data-page=logs] .nav-icon { background: url('assets/generated-icons/logs.png') center / contain no-repeat; }
+#card-folder .nav-icon { background: url('assets/generated-icons/folder.png') center / contain no-repeat; }
+.settings-icon { mask: none; background: url('assets/generated-icons/settings.png') center / contain no-repeat; }
+.launch-side .mods-icon { width: 32px; height: 32px; background: url('assets/generated-icons/chest.png') center / contain no-repeat; }
+.empty-mod-icon { background: url('assets/generated-icons/chest.png') center / contain no-repeat; }
+.log-empty-icon { background: url('assets/generated-icons/logs.png') center / contain no-repeat; }
+.launch-actions .pixel-arrow, .launch-button:disabled .pixel-arrow {
+  background: url('assets/sidebar-icons/play.svg') center / contain no-repeat;
+  clip-path: none;
+  filter: none;
+  image-rendering: pixelated;
+}
+.launch-button:disabled .pixel-arrow { opacity: .5; }
+.profile-marker, .profile:hover .profile-marker, body:has(#profiles-dialog[open]) .profile-marker,
+.field-arrow { background: url('assets/sidebar-icons/chevron.svg') center / contain no-repeat; clip-path: none; filter: none; image-rendering: pixelated; }
+.profile-marker { height: 12px; }
+.field-arrow { height: 12px; }
+.window-symbol, .is-maximized .maximize-symbol {
+  width: 14px; height: 14px; margin: 0; border: 0;
+  box-shadow: none; image-rendering: pixelated;
+}
+.minimize-symbol { background: url('assets/sidebar-icons/minimize.svg') center / contain no-repeat; }
+.maximize-symbol, .is-maximized .maximize-symbol { background: url('assets/sidebar-icons/maximize.svg') center / contain no-repeat; }
+.is-maximized .maximize-symbol { background-image: url('assets/sidebar-icons/restore.svg'); }
+.close-symbol { background: url('assets/sidebar-icons/close.svg') center / contain no-repeat; box-shadow: none; }
+.close-button:hover .close-symbol { transform: none; }
+.search-symbol { width: 18px; height: 18px; top: 50%; transform: translateY(-50%); font-size: 0; background: url('assets/sidebar-icons/search.svg') center / contain no-repeat; image-rendering: pixelated; }
+/* action icons share the same visual footprint; the chest has a denser silhouette */
+.launch-side .action-icon { width: 24px; height: 24px; flex: 0 0 24px; }
+.launch-side .mods-icon { width: 22px; height: 22px; flex-basis: 22px; margin: 1px; }

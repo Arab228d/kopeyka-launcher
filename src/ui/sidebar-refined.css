@@ -21,7 +21,7 @@
 .nav-button.active { color: #ffefb3; border-color: #b89443; background: linear-gradient(115deg, #6b572bdc, #2e2c25f5); box-shadow: inset 0 2px #ffe3a0aa, inset 0 -2px #6a5124, 0 3px #080c13, -2px 0 #ffdf7b, 0 0 15px #eeb93233; }
 .nav-button.active::before { content: ''; display: block; position: absolute; inset: -2px; border: 2px solid #f6d477; border-right-color: #a5823d; clip-path: polygon(0 0,40% 0,40% 4px,4px 4px,4px calc(100% - 4px),18% calc(100% - 4px),18% 100%,0 100%); background: none; z-index: 1; pointer-events: none; }
 .nav-icon { width: 28px; height: 28px; flex-shrink: 0; clip-path: none !important; background: currentColor; mask: var(--icon) center / contain no-repeat; }
-[data-page=home] .nav-icon { --icon: url('assets/sidebar-icons/creeper.svg'); }
+[data-page=home] .nav-icon { mask: none; background: url('assets/sidebar-icons/creeper.svg') center / contain no-repeat; image-rendering: pixelated; }
 [data-page=mods] .nav-icon { --icon: url('assets/sidebar-icons/mods.svg'); }
 [data-page=settings] .nav-icon { --icon: url('assets/sidebar-icons/settings.svg'); }
 [data-page=logs] .nav-icon { --icon: url('assets/sidebar-icons/logs.svg'); }

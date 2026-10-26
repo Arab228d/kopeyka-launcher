@@ -1,2 +1,18 @@
 <!doctype html>
-<html lang="ru"><head><meta charset="UTF-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self'; img-src 'self'"><title>KOPEYKA Laucher</title><link rel="stylesheet" href="startup.css"></head><body class="splash-only"><div id="startup-overlay" role="status" aria-label="Загрузка лаунчера"><img class="startup-logo" src="assets/startup-logo.png" alt="KOPEYKA"></div></body></html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:"><title>KOPEYKA Launcher</title><link rel="stylesheet" href="startup.css"><link rel="stylesheet" href="startup-textures.css"></head><body class="splash-only"><div id="startup-overlay" aria-label="Загрузка лаунчера">
+    <div class="startup-window-controls"><button id="startup-minimize" type="button" aria-label="Свернуть" title="Свернуть"></button><button id="startup-close" type="button" aria-label="Закрыть" title="Закрыть"></button></div>
+    <div class="startup-content">
+      <div class="startup-cube-stage" aria-hidden="true"><div class="startup-cube"><i class="startup-face startup-front"></i><i class="startup-face startup-back"></i><i class="startup-face startup-left"></i><i class="startup-face startup-right"></i><i class="startup-face startup-top"></i><i class="startup-face startup-bottom"></i></div></div>
+      <p class="startup-brand">КОПЕЙКА</p>
+      <p id="startup-status" role="status" aria-live="polite">Подготавливаем лаунчер</p>
+      <p id="startup-detail">Проверяем данные, версии и обновления</p>
+      <progress id="startup-progress" max="4" value="0" aria-label="Выполненные проверки"></progress>
+      <div class="startup-checks">
+        <div class="startup-check" data-startup-check="settings" data-state="pending"><span>Настройки и профиль</span><span class="startup-check-result">Загрузка…</span></div>
+        <div class="startup-check" data-startup-check="versions" data-state="pending"><span>Версии Minecraft</span><span class="startup-check-result">Проверка…</span></div>
+        <div class="startup-check" data-startup-check="loaders" data-state="pending"><span>Forge, Fabric и OptiFine</span><span class="startup-check-result">Проверка…</span></div>
+        <div class="startup-check" data-startup-check="updates" data-state="pending"><span>Обновления лаунчера</span><span class="startup-check-result">Проверка…</span></div>
+      </div>
+    </div>
+  </div>
+<script src="startup.js"></script></body></html>

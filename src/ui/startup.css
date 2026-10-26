@@ -1,19 +1,84 @@
-.splash-only { margin: 0; background: #000; }
-#startup-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: #000; opacity: 1; transition: opacity 420ms ease; }
-.startup-logo { width: clamp(180px, 27vw, 360px); max-height: 62vh; object-fit: contain; animation: startup-pulse 1.6s ease-in-out infinite; user-select: none; -webkit-user-drag: none; }
-.splash-only #startup-overlay { -webkit-app-region: drag; }
-body.booting .app-shell, body.booting .titlebar { opacity: 0; }
-body.booting .app-shell { pointer-events: none; }
-body.boot-reveal #startup-overlay { opacity: 0; pointer-events: none; }
-body.boot-reveal .titlebar { animation: startup-fade 380ms ease both; }
-body.boot-reveal .sidebar { animation: startup-slide 500ms cubic-bezier(.2,.75,.25,1) both; }
-body.boot-reveal .world-heading { animation: startup-fade 550ms 80ms ease both; }
-body.boot-reveal .play-panel { animation: startup-rise 550ms 140ms cubic-bezier(.2,.75,.25,1) both; }
-@keyframes startup-pulse { 0%,100% { opacity: .62; transform: scale(.985); } 50% { opacity: 1; transform: scale(1); } }
-@keyframes startup-fade { from { opacity: 0; } to { opacity: 1; } }
-@keyframes startup-slide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes startup-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@media (prefers-reduced-motion: reduce) {
-  .startup-logo, body.boot-reveal .titlebar, body.boot-reveal .sidebar, body.boot-reveal .world-heading, body.boot-reveal .play-panel { animation: none; }
-  #startup-overlay { transition: none; }
-}
+@font-face { font-family: StartupPixel; src: url('fonts/PressStart2P-Regular.ttf') format('truetype'); font-display: swap; }
+.splash-only { margin: 0; background: #10191f; }
+#startup-overlay { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; overflow: hidden; color: #e9f0f0; background: #101a20 url('assets/home-artwork.avif') center/cover; opacity: 1; transition: opacity 300ms ease; font-family: 'Segoe UI', sans-serif; }
+#startup-overlay::after { content: ''; position: absolute; inset: 0; background: linear-gradient(180deg, #081119aa 0%, #0b1620b8 48%, #081117d9 100%); pointer-events: none; }
+#startup-overlay::before { content: ''; position: absolute; inset: 0 0 auto; height: 34px; -webkit-app-region: drag; z-index: 3; }
+.startup-window-controls { position: absolute; right: 14px; top: 8px; display: flex; gap: 8px; z-index: 4; -webkit-app-region: no-drag; }
+.startup-window-controls button { position: relative; width: 32px; height: 26px; border: 0; background: transparent; color: #93a5aa; cursor: pointer; }
+.startup-window-controls button:hover { background: #2b4148; color: #f3f7ee; }
+#startup-minimize::before { content: ''; position: absolute; left: 10px; top: 15px; width: 12px; height: 2px; background: currentColor; }
+#startup-close::before, #startup-close::after { content: ''; position: absolute; left: 15px; top: 6px; width: 2px; height: 14px; background: currentColor; transform: rotate(45deg); }
+#startup-close::after { transform: rotate(-45deg); }
+.startup-content { position: relative; z-index: 2; width: min(500px, calc(100vw - 48px)); padding: 26px 30px 24px; text-align: center; border: 10px solid transparent; border-image: url('assets/button-frames/slate.svg') 12 fill / 12px / 0 stretch; background: transparent; filter: drop-shadow(0 12px 0 #060d12aa) drop-shadow(0 18px 24px #050b10aa); transform: translateY(-2px); }
+.startup-content::before { content: ''; position: absolute; inset: 10px; border: 2px solid #8da1a8; opacity: .32; pointer-events: none; }
+.startup-cube-stage { height: 176px; display: grid; place-items: center; perspective: 760px; position: relative; }
+.startup-cube-stage::after { content: ''; position: absolute; left: calc(50% - 58px); bottom: 12px; width: 116px; height: 16px; background: #02080c99; clip-path: polygon(12% 0,88% 0,100% 30%,100% 70%,88% 100%,12% 100%,0 70%,0 30%); }
+.startup-cube { position: relative; width: 112px; height: 112px; transform-style: preserve-3d; transform: rotateX(-24deg) rotateY(32deg); animation: startup-cube-turn 6s linear infinite; will-change: transform; }
+.startup-face { position: absolute; inset: 0; background-size: 100% 100%; image-rendering: pixelated; backface-visibility: hidden; }
+.startup-face::after { content: ''; position: absolute; inset: 0; background: #00000018; }
+.startup-front { transform: translateZ(56px); }.startup-back { transform: rotateY(180deg) translateZ(56px); }.startup-right { transform: rotateY(90deg) translateZ(56px); }.startup-left { transform: rotateY(-90deg) translateZ(56px); }.startup-top { transform: rotateX(90deg) translateZ(56px); background-color: #82b54a; background-blend-mode: multiply; }.startup-bottom { transform: rotateX(-90deg) translateZ(56px); }
+.startup-left::after { background: #00000035; }.startup-back::after { background: #00000028; }.startup-top::after { background: #ffffff05; }
+.startup-brand { margin: 2px 0 16px; font: 20px/1.5 StartupPixel, monospace; letter-spacing: 2px; color: #f1e5c6; text-shadow: 3px 3px #0b1115; }
+#startup-status { font-size: 14px; font-weight: 700; margin: 0 0 5px; color: #f4f7eb; }
+#startup-detail { font-size: 11px; line-height: 1.4; color: #a9b9b8; margin: 0 0 15px; min-height: 15px; }
+#startup-progress { display: block; width: 100%; height: 8px; margin: 0 0 18px; appearance: none; border: 0; background: #0a1319; box-shadow: 0 -2px #0a1116, 0 2px #71858a; }
+#startup-progress::-webkit-progress-bar { background: #0a1319; } #startup-progress::-webkit-progress-value { background: #d2ad55; box-shadow: inset 0 2px #f0d68b, inset 0 -2px #80662d; }
+.startup-checks { display: grid; gap: 7px; text-align: left; font-size: 11px; padding: 0 4px; }
+.startup-check { display: flex; align-items: center; gap: 9px; color: #c2cecc; }
+.startup-check::before { content: ''; width: 6px; height: 6px; background: #5a7077; box-shadow: 2px 2px #0a1217; flex: none; }
+.startup-check[data-state=done]::before { background: #8fcb62; }.startup-check[data-state=cache]::before,.startup-check[data-state=warning]::before { background: #d1b26b; }
+.startup-check-result { margin-left: auto; color: #84999e; font-size: 10px; }.startup-check[data-state=warning] .startup-check-result { color: #d1b26b; }
+body.booting .app-shell, body.booting .titlebar { opacity: 0; } body.booting .app-shell { pointer-events: none; } body.boot-reveal #startup-overlay { opacity: 0; pointer-events: none; }
+body.boot-reveal .titlebar { animation: startup-fade 380ms ease both; } body.boot-reveal .sidebar { animation: startup-slide 500ms cubic-bezier(.2,.75,.25,1) both; } body.boot-reveal .world-heading { animation: startup-fade 550ms 80ms ease both; } body.boot-reveal .play-panel { animation: startup-rise 550ms 100ms cubic-bezier(.2,.75,.25,1) both; }
+@keyframes startup-cube-turn { from { transform: rotateX(-24deg) rotateY(32deg); } to { transform: rotateX(-24deg) rotateY(392deg); } } @keyframes startup-fade { from { opacity: 0; } to { opacity: 1; } } @keyframes startup-slide { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } } @keyframes startup-rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .startup-cube,body.boot-reveal .titlebar,body.boot-reveal .sidebar,body.boot-reveal .world-heading,body.boot-reveal .play-panel { animation: none; } #startup-overlay { transition: none; } }
+/* final splash composition: the artwork is the screen, status is a light footer */
+#startup-overlay::after { background: linear-gradient(180deg, #07101866 0%, #07101822 42%, #071018c4 100%); }
+.startup-content { width: min(620px, calc(100vw - 48px)); padding: 0 28px 20px; border: 0; background: transparent; filter: none; transform: translateY(-4px); }
+.startup-content::before { display: none; }
+.startup-cube-stage { height: 238px; }
+.startup-cube-stage::after { bottom: 19px; width: 132px; left: calc(50% - 66px); opacity: .9; }
+.startup-cube { width: 128px; height: 128px; }
+.startup-front { transform: translateZ(64px); }.startup-back { transform: rotateY(180deg) translateZ(64px); }.startup-right { transform: rotateY(90deg) translateZ(64px); }.startup-left { transform: rotateY(-90deg) translateZ(64px); }.startup-top { transform: rotateX(90deg) translateZ(64px); }.startup-bottom { transform: rotateX(-90deg) translateZ(64px); }
+.startup-brand { margin: 0 0 8px; font-size: 25px; text-shadow: 3px 3px #111820, 0 0 18px #060a0ccc; }
+#startup-status { font-size: 13px; text-shadow: 2px 2px #111820; }
+#startup-detail { color: #d1dbd7; text-shadow: 1px 1px #111820; margin-bottom: 12px; }
+#startup-progress { width: min(520px, 100%); margin: 0 auto 12px; height: 7px; box-shadow: 0 2px #080d10, 0 0 0 1px #aab7ad66; }
+.startup-checks { width: min(520px, 100%); margin: 0 auto; padding: 9px 12px; gap: 5px; border: 2px solid #9eacaa77; background: #101b22aa; box-shadow: 0 4px 0 #07101688; }
+.startup-check { color: #e0e8e1; text-shadow: 1px 1px #0a1116; }
+.startup-check-result { color: #b6c3bd; }
+/* compact 9:16 startup window */
+#startup-overlay { background: #111b21 url('assets/home-artwork.avif') center/cover; }
+#startup-overlay::after { background: linear-gradient(180deg, #07101844 0%, #07101866 55%, #071018d9 100%); }
+.startup-window-controls { right: 8px; top: 7px; gap: 3px; }
+.startup-window-controls button { width: 26px; height: 22px; }
+.startup-content { width: calc(100% - 34px); padding: 0 17px 18px; transform: none; }
+.startup-cube-stage { height: 290px; }
+.startup-cube-stage::before { width: 142px; height: 142px; }
+.startup-brand { font-size: 18px; margin-bottom: 10px; }
+#startup-status { font-size: 11px; }
+#startup-detail { font-size: 9px; margin-bottom: 12px; }
+#startup-progress { width: 100%; height: 7px; margin-bottom: 0; }
+.startup-checks { display: none; }
+/* Cyrillic-safe startup title: PressStart lacks a proper uppercase Й glyph. */
+.startup-brand { font-family: "Segoe UI", Arial, sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 3px; line-height: 1.2; }
+/* final compact splash: image + bar only */
+.startup-content { width: 100%; padding: 0; }
+.startup-cube-stage { height: 405px; }
+.startup-cube-stage::before { width: 118px; height: 118px; }
+.startup-cube-stage::after { width: 106px; left: calc(50% - 53px); bottom: 34px; }
+.startup-brand, #startup-status, #startup-detail { display: none; }
+#startup-progress { width: 210px; height: 6px; margin: 0 auto; }
+.startup-checks { display: none; }
+/* minimal 9:16 loading screen */
+#startup-overlay { background: #111820 url('assets/home-artwork.avif') center/cover; }
+#startup-overlay::after { background: #080f16b8; backdrop-filter: blur(13px); }
+.startup-content { width: 100%; padding: 0; }
+.startup-cube-stage { display: none; }
+.startup-brand, #startup-detail, .startup-checks { display: none; }
+#startup-status { display: block; margin: 0 0 18px; font: 14px/1.2 "Segoe UI", Arial, sans-serif; font-weight: 700; letter-spacing: 1px; color: #e8eee8; text-shadow: 2px 2px #060b10; }
+#startup-progress { display: block; width: 190px; height: 6px; margin: 0 auto; background: #071017; box-shadow: 0 0 0 1px #78909a66; }
+#startup-progress::-webkit-progress-value { background: #d2ad55; }
+/* index.html is shown only after the dedicated splash; never show a second splash overlay */
+body:not(.splash-only) #startup-overlay { display: none !important; }
+body:not(.splash-only) .app-shell, body:not(.splash-only) .titlebar { opacity: 1 !important; pointer-events: auto !important; }

@@ -54,18 +54,19 @@ async function getManifest(refresh = false) {
   if (!manifestTask) manifestTask = (async () => {
     const cache = path.join(app.getPath('userData'), 'versions-cache.json');
     try {
-      const fresh = await fetchJson(MANIFEST);
+      const fresh = await fetchJson(MANIFEST, (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(10000) }));
       if (!Array.isArray(fresh?.versions) || !fresh.versions.length) throw new Error('Некорректный список версий Minecraft.');
-      manifest = fresh;
+      manifest = { ...fresh, source: 'network' };
     } catch (error) {
       if (!manifest) {
         try {
           const cached = JSON.parse(await fs.readFile(cache, 'utf8'));
           if (!Array.isArray(cached?.versions) || !cached.versions.length) throw new Error('Некорректный список версий Minecraft.');
-          manifest = cached;
+          manifest = { ...cached, source: 'cache' };
         } catch { throw new Error('Не удалось получить версии Minecraft. Проверьте подключение к интернету.'); }
       }
       send({ kind: 'log', message: 'Используется сохранённый список версий: сервер недоступен.' });
+      manifest.source = 'cache';
       return manifest;
     }
     try { await fs.writeFile(cache, JSON.stringify(manifest)); }
@@ -97,13 +98,23 @@ app.on('second-instance', () => { if (window && !window.isDestroyed()) { if (win
 app.whenReady().then(async () => {
   if (!primaryInstance) return;
   const display = screen.getPrimaryDisplay().workAreaSize;
-  window = new BrowserWindow({ width: Math.min(1480, display.width), height: Math.min(1120, display.height), minWidth: 1020, minHeight: 720, frame: false, show: false, icon: path.join(__dirname, 'ui', 'assets', 'startup-logo.png'), backgroundColor: '#000000', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+  window = new BrowserWindow({ width: 300, height: 533, minWidth: 300, minHeight: 533, frame: false, show: false, icon: path.join(__dirname, 'ui', 'assets', 'startup-logo.png'), backgroundColor: '#10191f', title: 'KOPEYKA Laucher', autoHideMenuBar: true, webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true, additionalArguments: ['--kopeyka-started-at=' + Date.now()] } });
   registerWindowControls(window);
   window.on('close', event => { if (!quitting && (game || busy)) { event.preventDefault(); hiddenForOperation = true; window.hide(); } });
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
   window.once('ready-to-show', () => { if (!window.isDestroyed()) window.show(); });
   await window.loadFile(path.join(__dirname, 'ui', 'splash.html'));
+  let mainOpened = false;
+  const openMainWindow = async () => {
+    if (mainOpened || window.isDestroyed()) return;
+    mainOpened = true;
+    window.setMinimumSize(1020, 720);
+    window.setSize(Math.min(1480, display.width), Math.min(1120, display.height));
+    window.center();
+    await window.loadFile(path.join(__dirname, 'ui', 'index.html'));
+  };
+  const splashFallback = setTimeout(() => openMainWindow().catch(() => {}), 10000);
   await fs.mkdir(app.getPath('userData'), { recursive: true });
   const existingInstall = nativeFs.existsSync(path.join(stableData, "settings.json")) || legacyData.some(directory => nativeFs.existsSync(path.join(directory, "settings.json")));
   settings = await loadSettings(stableData, legacyData, defaults());
@@ -126,12 +137,13 @@ app.whenReady().then(async () => {
   const versionCatalog = backgroundCatalog(path.join(stableData, 'versions-cache.json'), () => getManifest(true), value => Array.isArray(value.versions) && value.versions.length > 0, value => send({kind:'versions-refreshed', data:value}));
   const loadersCached = backgroundCatalog(path.join(stableData, 'loader-catalog.json'), () => fetchCatalog(stableData), value => ['forge','fabric','neoforge','optifine'].some(key => value[key] && typeof value[key] === 'object'), value => send({kind:'loaders-refreshed', data:value}));
   ipcMain.handle('launcher:versions', async (_, refresh) => {
-    const data = await versionCatalog(refresh === true);
-    return { latest: data.latest, versions: data.versions.map(({ id, type }) => ({ id, type })) };
+    const { value: data, source } = await versionCatalog.withSource(refresh === true);
+    return { latest: data.latest, versions: data.versions.map(({ id, type }) => ({ id, type })), source: source === 'cache' ? source : data.source || source };
   });
   let pendingUpdate;
-  ipcMain.handle('launcher:loader-catalog', (_, refresh) => {
-    return loadersCached(refresh === true);
+  ipcMain.handle('launcher:loader-catalog', async (_, refresh) => {
+    const { value, source } = await loadersCached.withSource(refresh === true);
+    return { ...value, source };
   });
   ipcMain.handle('launcher:update-check', async () => {
     pendingUpdate = await updates.checkUpdate(app.getVersion());
@@ -270,7 +282,8 @@ app.whenReady().then(async () => {
       return { ok: false, error: error.message };
     } finally { finishOperation(); }
   });
-  await window.loadFile(path.join(__dirname, 'ui', 'index.html'));
+  clearTimeout(splashFallback);
+  await openMainWindow();
   if (process.env.KOPEYKA_SCREENSHOT) {
     setTimeout(async () => {
       await window.webContents.executeJavaScript('document.activeElement?.blur()');
@@ -281,3 +294,10 @@ app.whenReady().then(async () => {
   }
 }).catch(error => { dialog.showErrorBox('KOPEYKA: не удалось открыть данные', error.message); app.quit(); });
 app.on('window-all-closed', () => app.quit());
+
+
+
+
+
+
+

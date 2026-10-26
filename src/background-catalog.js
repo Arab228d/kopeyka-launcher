@@ -6,11 +6,14 @@ function backgroundCatalog(file, refresh, validate, updated = () => {}) {
     if (!task) task = Promise.resolve().then(refresh).then(value => { if (!validate(value)) throw new Error('Некорректный каталог'); updated(value); return value; }).finally(() => { task = undefined; });
     return task;
   }
-  return async (force = false) => {
+  async function withSource(force = false) {
     if (!force) {
-      try { const value = JSON.parse(await fs.readFile(file, 'utf8')); if (validate(value)) { fetchFresh().catch(() => {}); return value; } } catch {}
+      try { const value = JSON.parse(await fs.readFile(file, 'utf8')); if (validate(value)) { fetchFresh().catch(() => {}); return { value, source: 'cache' }; } } catch {}
     }
-    return fetchFresh();
-  };
+    return { value: await fetchFresh(), source: 'network' };
+  }
+  const get = async force => (await withSource(force)).value;
+  get.withSource = withSource;
+  return get;
 }
 module.exports = { backgroundCatalog };

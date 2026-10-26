@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('launcher', {
+  startupStartedAt: Number(process.argv.find(value => value.startsWith('--kopeyka-started-at='))?.split('=')[1]) || 0,
   minimizeWindow: () => ipcRenderer.invoke('launcher:window', 'minimize'),
   maximizeWindow: () => ipcRenderer.invoke('launcher:window', 'maximize'),
   closeWindow: () => ipcRenderer.invoke('launcher:window', 'close'),
