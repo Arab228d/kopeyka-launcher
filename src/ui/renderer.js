@@ -468,6 +468,11 @@ async function showReleaseNews(automatic = false) {
     if (!document.querySelector('dialog[open]')) $('news-dialog').showModal();
   } catch (error) { log('Что нового: ' + error.message); }
 }
+async function refreshMinecraftNews() {
+  if (!api.minecraftNews) return;
+  try { const items = await api.minecraftNews(); const first = items?.[0]; if (first) { $('minecraft-news-title').textContent = first.title; $('minecraft-news-body').textContent = items.slice(1, 3).map(item => item.title).join(' · ') || 'Новые публикации Minecraft'; $('minecraft-news-link').href = first.url; } } catch (error) { log('Новости Minecraft: ' + error.message); }
+}
+refreshMinecraftNews();
 window.addEventListener('ui-revealed', () => { uiRevealed = true; if (releaseNewsReady) showReleaseNews(true); });
 async function prepareReleaseNews() { releaseNewsReady = true; if (uiRevealed) await showReleaseNews(true); }
 prepareReleaseNews();

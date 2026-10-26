@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('launcher', {
   windowState: () => ipcRenderer.invoke('launcher:window', 'state'),
   onWindowState: handler => { ipcRenderer.on('launcher:window-state', (_, state) => handler(state)); },
   releaseNews: () => ipcRenderer.invoke("launcher:release-news"),
+  minecraftNews: () => ipcRenderer.invoke('launcher:minecraft-news'),
   acknowledgeNews: () => ipcRenderer.invoke("launcher:release-news-seen"),
   settings: () => ipcRenderer.invoke('launcher:settings'),
   avatar: nickname => ipcRenderer.invoke('launcher:avatar', nickname),

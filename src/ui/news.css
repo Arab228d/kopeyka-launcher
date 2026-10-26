@@ -25,3 +25,4 @@ body.news-view .shell-backdrop { opacity: .65; }
 .news-card-small h3 { font-size:12px; margin-top:12px; }
 .news-card-small p { color:#b9cbd1; font-size:10px; }
 @media(max-width:900px) { .news-feed { grid-template-columns:1fr; } .news-card-featured { grid-row:auto; } .news-small-grid { grid-column:auto; } .news-intro { display:block; } .news-intro p { margin-top:8px; } }
+#news { background: transparent; backdrop-filter: none; }

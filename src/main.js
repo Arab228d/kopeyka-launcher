@@ -126,6 +126,22 @@ app.whenReady().then(async () => {
   await releaseNews.load();
   ipcMain.handle("launcher:release-news", () => releaseNews.current());
   ipcMain.handle("launcher:release-news-seen", () => releaseNews.acknowledge());
+  let minecraftNewsCache = { at: 0, items: [] };
+  ipcMain.handle('launcher:minecraft-news', async () => {
+    if (Date.now() - minecraftNewsCache.at < 600000 && minecraftNewsCache.items.length) return minecraftNewsCache.items;
+    try {
+      const html = await (await fetch('https://www.minecraft.net/en-us/article', { signal: AbortSignal.timeout(8000) })).text();
+      const items = [], seen = new Set(), pattern = /<a[^>]+href="(\/en-us\/article\/[^\"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
+      for (const match of html.matchAll(pattern)) {
+        const title = match[2].replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
+        if (!title || title.length < 8 || seen.has(match[1])) continue;
+        seen.add(match[1]); items.push({ title: title.slice(0, 140), url: 'https://www.minecraft.net' + match[1] });
+        if (items.length >= 6) break;
+      }
+      if (items.length) minecraftNewsCache = { at: Date.now(), items };
+      return minecraftNewsCache.items;
+    } catch { return minecraftNewsCache.items; }
+  });
   const publishTime = () => send({ kind: 'playtime', seconds: playtime.total() });
   const checkpoint = stop => playtime.checkpoint(stop).then(publishTime).catch(error => send({ kind: 'log', message: 'Не удалось сохранить время игры: ' + error.message }));
   setInterval(() => { if (game) checkpoint(false); }, 30000).unref();
