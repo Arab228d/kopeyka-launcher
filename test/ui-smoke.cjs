@@ -48,7 +48,7 @@ app.whenReady().then(async () => {
     await window.webContents.executeJavaScript("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
     await fs.writeFile(path.join(output, 'startup-logo.png'), (await window.webContents.capturePage()).toPNG());
     await window.loadFile(path.join(__dirname, '..', 'src', 'ui', 'index.html'));
-    assert.equal(await window.webContents.executeJavaScript("document.body.classList.contains('booting') && document.querySelector('.app-shell').inert && !!document.getElementById('startup-overlay')"), true, 'Splash covers UI while local settings load');
+    assert.equal(await window.webContents.executeJavaScript("!document.body.classList.contains('booting') && !document.querySelector('.app-shell').inert"), true, 'Main UI is interactive after the dedicated splash');
     await delay(9800);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('launcher-update').hidden"), false);
     await window.webContents.executeJavaScript("document.getElementById('launcher-update').click()"); await delay(100);
