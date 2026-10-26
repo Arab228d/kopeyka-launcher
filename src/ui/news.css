@@ -73,3 +73,8 @@ body.news-view main, body.news-view #news, body.news-view .news-feed, body.news-
 .minecraft-news-item { position:relative; overflow:hidden; background-color:#10223166 !important; }
 .minecraft-news-item::after { content:''; position:absolute; top:0; right:0; bottom:0; width:120px; background:linear-gradient(90deg,#102231ee 0%,#10223166 55%,transparent),var(--news-image) center/cover no-repeat; opacity:.95; pointer-events:none; }
 .minecraft-news-item > * { position:relative; z-index:1; max-width:72%; }
+/* Full artwork backdrop for the transparent news surface. */
+body.news-view .app-shell { background: url('assets/home-artwork.avif') center/cover no-repeat !important; }
+body.news-view main { background: #0d192455 !important; backdrop-filter: blur(9px) saturate(.82); }
+body.news-view #news { background: transparent !important; }
+.news-top-button { height:36px !important; min-height:36px !important; padding:0 10px !important; }
