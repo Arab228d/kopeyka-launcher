@@ -24,6 +24,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('launcher:loader-catalog', () => ({fabric: {'26.3':true, '1.21.1':true, '1.20.1':true}, forge:{'1.21.1':'52.0.16'}, neoforge:{'1.21.1':'21.1.257'},optifine:{'1.21.1':'OptiFine_1.21.1_HD_U_J1.jar'},forge_optifine:{'1.21.1':{forge:'52.0.16',optifine:'OptiFine_1.21.1_HD_U_J1.jar'}},errors:[]}));
     ipcMain.handle('launcher:release-news', () => ({version:'0.1.1-beta',body:'Новый редактор профилей\nПиксельные карточки и стеклянное окно.',unread:false}));
     ipcMain.handle('launcher:release-news-seen', () => {});
+    ipcMain.handle('launcher:minecraft-news', () => [{ title: 'Minecraft test news', summary: 'Test summary', category: 'News', image: null, url: 'https://www.minecraft.net/en-us/article/test-news' }]);
     ipcMain.handle('launcher:update-check', () => ({version:'0.4.0'}));
     ipcMain.handle('launcher:update-install', () => { throw new Error('Test download failure'); });
     let savedSettings;
