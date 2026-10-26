@@ -460,6 +460,7 @@ async function showReleaseNews(automatic = false) {
   if (!api.releaseNews) return;
   try {
     const news = await api.releaseNews();
+    if ($('news-launcher-title')) { $('news-launcher-title').textContent = news.version || 'Новости KOPEYKA'; $('news-launcher-body').textContent = news.body || 'Новых заметок пока нет.'; $('news-launcher-date').textContent = 'Обновления лаунчера'; }
     if (automatic && !news.unread) return;
     $('news-version').textContent = 'Версия ' + news.version;
     $('news-body').textContent = news.body;

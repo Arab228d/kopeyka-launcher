@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="startup-textures.css">
   <link rel="stylesheet" href="asset-buttons.css"><link rel="stylesheet" href="shaders.css"><link rel="stylesheet" href="mods-glass.css"><link rel="stylesheet" href="logs-glass.css"><link rel="stylesheet" href="dialogs-glass.css">
   <link rel="stylesheet" href="refinements.css">
-  <link rel="stylesheet" href="iconography.css">
+  <link rel="stylesheet" href="iconography.css"><link rel="stylesheet" href="news.css">
 </head>
 <body>
   <div id="startup-overlay" aria-label="Загрузка лаунчера">
@@ -57,7 +57,7 @@
     <nav>
       <button class="nav-button active" data-page="home"><span class="nav-icon" aria-hidden="true"></span>Minecraft Java<span class="nav-dot"></span></button>
     </nav>
-    <div class="sidebar-bottom"><div class="sidebar-tools"><button class="nav-button" data-page="logs" title="Журнал запуска" aria-label="Журнал запуска"><span class="nav-icon" aria-hidden="true">≡</span>Журнал</button><button class="nav-button" id="card-folder" title="Папка игры" aria-label="Папка игры"><span class="nav-icon" aria-hidden="true">▣</span>Папка</button></div><button class="profile" id="profiles-open" aria-label="Редактор профилей" aria-haspopup="dialog"><div class="avatar"><i></i></div><div class="profile-info"><strong id="profile-name">Player</strong><span class="profile-status" aria-hidden="true"></span></div><span class="profile-marker" aria-hidden="true"></span></button></div>
+    <div class="sidebar-bottom"><div class="sidebar-tools"><button class="nav-button" data-page="logs" title="Журнал запуска" aria-label="Журнал запуска"><span class="nav-icon" aria-hidden="true">≡</span>Журнал</button><button class="nav-button" data-page="news" title="Новости" aria-label="Новости"><span class="nav-icon" aria-hidden="true">✦</span>Новости</button><button class="nav-button" id="card-folder" title="Папка игры" aria-label="Папка игры"><span class="nav-icon" aria-hidden="true">▣</span>Папка</button></div><button class="profile" id="profiles-open" aria-label="Редактор профилей" aria-haspopup="dialog"><div class="avatar"><i></i></div><div class="profile-info"><strong id="profile-name">Player</strong><span class="profile-status" aria-hidden="true"></span></div><span class="profile-marker" aria-hidden="true"></span></button></div>
   </aside>
   <main>
     <section id="home" class="page">
@@ -93,6 +93,7 @@
       <div class="mods-footer"><div class="mods-footer-info"><strong id="mods-selection">Установлено</strong><p id="mods-status" role="status" aria-live="polite"></p><progress id="mods-progress" max="100" hidden></progress></div></div>
     </section>
     <section id="logs" class="page" hidden><div class="page-intro"><h2>Журнал запуска</h2><p class="logs-caption">События Minecraft и детали последнего запуска.</p></div><div class="log-toolbar"><span class="log-session">Текущая сессия</span><div class="log-actions"><button class="secondary-button" id="export-log">Сохранить журнал</button> <button class="secondary-button" id="clear-log">Очистить экран</button></div></div><div class="log-surface"><pre id="log" role="log" aria-label="События запуска"></pre><div class="log-empty"><span class="log-empty-icon" aria-hidden="true"></span><strong>Здесь начнётся история запуска</strong><p>Запусти Minecraft — сообщения игры появятся здесь. При ошибке сохрани журнал.</p></div></div></section>
+    <section id="news" class="page" hidden><div class="page-intro news-intro"><h2>Новости</h2><p>Обновления Minecraft, анонсы и новости KOPEYKA.</p></div><div class="news-feed"><article class="news-card news-card-featured"><span class="news-card-kind">KOPEYKA</span><h3 id="news-launcher-title">KOPEYKA 0.2.0 beta</h3><p id="news-launcher-body">Новые профили сборок, копирование модов между версиями и более надёжный запуск.</p><small id="news-launcher-date">Последнее обновление лаунчера</small></article><article class="news-card"><span class="news-card-kind">MINECRAFT</span><h3>Новости и анонсы Minecraft</h3><p>Следи за новостями игры, снапшотами, обновлениями и анонсами Minecraft Live.</p><a href="https://www.minecraft.net/ru-ru/articles" target="_blank" rel="noreferrer">Открыть официальные новости ↗</a></article></div></section>
   </main>
   </div>
     <div id="launch-overlay" hidden role="status" aria-live="polite"><div class="launch-branding"><div class="loading-pixel" aria-hidden="true"></div><p>Загрузка игры<span class="loading-dots" aria-hidden="true">…</span></p><div class="loading-track" id="launch-indeterminate"><i></i></div><progress id="launch-progress" max="100" value="0" hidden></progress><small id="launch-detail"></small></div></div>
@@ -111,5 +112,6 @@
   <script src="home-art.js"></script>
 </body>
 </html>
+
 
 
