@@ -1,19 +1,27 @@
-/* News uses the same artwork and compact pixel composition as the home screen. */
-.news-top-button { width: 100%; height: 36px; min-height: 36px; margin-bottom: 8px; justify-content: flex-start; }
-.news-top-button .nav-icon { width: 18px; height: 18px; }
+/* News page: transparent glass surfaces matching Mods */
 body.news-view main { background: transparent; }
-body.news-view .shell-backdrop { opacity: .5; }
-#news { min-height: var(--content-height); padding: 22px 24px 18px; background: #10223166; backdrop-filter: blur(10px); }
-.news-intro { display: flex; align-items: end; justify-content: space-between; min-height: 72px; padding: 0 0 18px; border-bottom: 2px solid #a9bfd044; }
-.news-intro h2 { margin: 0; font-size: 25px; text-shadow: 3px 3px #091119; }
-.news-intro p { margin: 0; color: #c9d7d8; font-size: 11px; }
-.news-feed { display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 1120px; margin-top: 18px; }
-.news-card { min-height: 150px; padding: 18px 22px; border: 8px solid transparent; border-image: var(--frame-normal) 12 fill / 10px / 0 stretch; background: #152a38dd; box-shadow: none; }
-.news-card-featured { min-height: 184px; display: flex; flex-direction: column; justify-content: flex-end; background: linear-gradient(90deg, #152b37ee, #0c1a25dd), url('assets/home-artwork.avif') center/cover; }
-.news-card-kind { color: #e2c36b; font: 9px/1.4 PlayPixel, monospace; letter-spacing: 1px; }
-.news-card h3 { margin: 12px 0 10px; font: 17px/1.5 PlayPixel, monospace; color: #fff0bd; text-shadow: 2px 2px #071018; }
-.news-card p { margin: 0 0 16px; color: #d0dfe2; font: 12px/1.7 'Segoe UI', sans-serif; max-width: 680px; }
-.news-card small { color: #9fb4ba; font-size: 10px; }
-.news-card a { display: inline-block; margin-top: 8px; color: #e7ca72; font-size: 11px; text-decoration: none; }
-.news-card a:hover { text-decoration: underline; }
-@media (max-width: 900px) { .news-feed { grid-template-columns: 1fr; } .news-intro { display: block; } .news-intro p { margin-top: 10px; } }
+body.news-view .shell-backdrop { opacity: .65; }
+#news { min-height: var(--content-height); padding: 22px 24px 18px; background: #10223145; backdrop-filter: blur(8px); }
+.news-intro { display:flex; align-items:end; justify-content:space-between; min-height:64px; padding:0 4px 15px; border-bottom:1px solid #d6e5f52b; }
+.news-intro h2 { margin:0; font-size:24px; text-shadow:2px 3px #102231; }
+.news-intro p { margin:0; color:#d0dce6; font-size:11px; }
+.news-feed { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(290px,.9fr); gap:14px; max-width:1160px; margin-top:16px; }
+.news-card { border:8px solid transparent; border-image:var(--frame-normal) 12 fill / 10px / 0 stretch; background:#10223155; min-width:0; }
+.news-card-featured { grid-row:span 2; min-height:360px; display:flex; flex-direction:column; padding:0; }
+.news-card-minecraft { min-height:205px; display:flex; padding:0; }
+.news-card-image { flex:0 0 42%; min-height:120px; background-position:center; background-size:cover; image-rendering:auto; }
+.news-card-image-launcher { background-image:linear-gradient(90deg,#0d1b25aa,#0d1b2500),url('assets/home-artwork.avif'); }
+.news-card-image-minecraft { flex-basis:38%; background-image:linear-gradient(90deg,#0d1b25aa,#0d1b2500),url('assets/minecraft-logo.png'); background-color:#172d3d; background-size:80%,cover; background-repeat:no-repeat; }
+.news-card-copy { padding:20px 22px; min-width:0; }
+.news-card-featured .news-card-copy { margin-top:auto; background:linear-gradient(180deg,#0d1b2500,#0d1b25dd 18%); }
+.news-card-kind { display:block; color:#e2c36b; font:9px/1.4 PlayPixel,monospace; letter-spacing:1px; }
+.news-card h3 { margin:10px 0 9px; font:16px/1.5 PlayPixel,monospace; color:#fff0bd; text-shadow:2px 2px #071018; }
+.news-card p { margin:0 0 14px; color:#d0dfe2; font:11px/1.65 'Segoe UI',sans-serif; }
+.news-card small { color:#9fb4ba; font-size:10px; }
+.news-card a { color:#e7ca72; font-size:11px; text-decoration:none; }
+.news-card a:hover { text-decoration:underline; }
+.news-small-grid { grid-column:2; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.news-card-small { min-height:145px; padding:18px; }
+.news-card-small h3 { font-size:12px; margin-top:12px; }
+.news-card-small p { color:#b9cbd1; font-size:10px; }
+@media(max-width:900px) { .news-feed { grid-template-columns:1fr; } .news-card-featured { grid-row:auto; } .news-small-grid { grid-column:auto; } .news-intro { display:block; } .news-intro p { margin-top:8px; } }
