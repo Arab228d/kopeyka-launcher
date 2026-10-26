@@ -92,3 +92,9 @@ body.news-view #news { background: transparent !important; }
 #news .minecraft-news-item:hover { border-image-source:var(--frame-hover); }
 #news .news-card-minecraft { display:none; }
 @media(max-width:900px) { #news .news-feed { grid-template-columns:1fr; } #news .news-card-featured { grid-row:auto; } #news .news-live-column { grid-column:1; } }
+/* Actual news blur: blur the artwork layer itself, then keep the UI surfaces translucent. */
+body.news-view .app-shell { background:none !important; }
+body.news-view .shell-backdrop { opacity:.78 !important; }
+body.news-view #shell-art { filter:blur(13px) saturate(.82) brightness(.72) !important; transform:scale(1.045) !important; }
+body.news-view main { background:#10223135 !important; backdrop-filter:none !important; }
+body.news-view #news, body.news-view #news .news-feed { background:#10223138 !important; }
