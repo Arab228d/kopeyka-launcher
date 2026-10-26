@@ -105,3 +105,7 @@ body.news-view #news .news-live-column { grid-column:1; display:block; }
 body.news-view #news .minecraft-news-list { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
 body.news-view #news .minecraft-news-item, body.news-view #news .minecraft-news-item.featured, body.news-view #news .minecraft-news-item.compact { min-height:130px; }
 @media(max-width:900px) { body.news-view #news .minecraft-news-list { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+/* No global dark veil on news: only the artwork blur and card surfaces remain. */
+body.news-view .shell-backdrop { opacity:1 !important; }
+body.news-view #shell-art { filter:blur(13px) saturate(.9) !important; }
+body.news-view main, body.news-view #news, body.news-view #news .news-feed { background:transparent !important; }
