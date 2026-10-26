@@ -26,6 +26,7 @@ let logText = '', logQueue = [], logQueueSize = 0, logTimer;
 function page(name) {
   document.body.classList.toggle('mods-view', name === 'mods');
   document.body.classList.toggle('logs-view', name === 'logs');
+  document.body.classList.toggle('news-view', name === 'news');
   document.querySelectorAll('.page').forEach(el => el.hidden = el.id !== name);
   document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.page === name || el.dataset.page === 'home' && ['mods', 'settings'].includes(name)));
   if (name === 'mods' && config) { updateModProfile(); refreshInstalled(); }
