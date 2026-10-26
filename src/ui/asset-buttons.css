@@ -21,7 +21,7 @@
 .profile-marker { background: #dfebf5; filter: drop-shadow(1px 2px #101c26); }
 .profile:hover .profile-marker, body:has(#profiles-dialog[open]) .profile-marker { background: #f4d16f; }
 .avatar { flex-shrink: 0; }
-.sidebar-tools { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 8px; }
+.sidebar-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
 .sidebar-tools .nav-button { min-height: 36px; height: 36px; padding: 0 4px; gap: 7px; justify-content: center; font: 12px/1.2 'Segoe UI', sans-serif; font-weight: 600; }
 .sidebar-tools .nav-icon { width: 16px; height: 16px; }
 .window-button { border-width: 5px; border-image-width: 5px; padding: 0; }
