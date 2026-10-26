@@ -130,14 +130,8 @@ app.whenReady().then(async () => {
   ipcMain.handle('launcher:minecraft-news', async () => {
     if (Date.now() - minecraftNewsCache.at < 600000 && minecraftNewsCache.items.length) return minecraftNewsCache.items;
     try {
-      const html = await (await fetch('https://www.minecraft.net/en-us/article', { signal: AbortSignal.timeout(8000) })).text();
-      const items = [], seen = new Set(), pattern = /<a[^>]+href="(\/en-us\/article\/[^\"]+)"[^>]*>([\s\S]*?)<\/a>/gi;
-      for (const match of html.matchAll(pattern)) {
-        const title = match[2].replace(/<[^>]+>/g, ' ').replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\s+/g, ' ').trim();
-        if (!title || title.length < 8 || seen.has(match[1])) continue;
-        seen.add(match[1]); items.push({ title: title.slice(0, 140), url: 'https://www.minecraft.net' + match[1] });
-        if (items.length >= 6) break;
-      }
+      const data = await (await fetch('https://www.minecraft.net/content/minecraftnet/language-masters/en-us/jcr:content/root/container/image_grid_a_copy_64.articles.page-1.json', { signal: AbortSignal.timeout(8000) })).json();
+      const items = (data.article_grid || []).map(entry => ({ title: entry.default_tile?.title, summary: entry.default_tile?.sub_header, category: entry.primary_category, image: entry.default_tile?.image?.imageURL ? 'https://www.minecraft.net' + entry.default_tile.image.imageURL : null, url: entry.article_url ? 'https://www.minecraft.net' + entry.article_url : null })).filter(item => item.title && item.url).slice(0, 6);
       if (items.length) minecraftNewsCache = { at: Date.now(), items };
       return minecraftNewsCache.items;
     } catch { return minecraftNewsCache.items; }
