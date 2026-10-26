@@ -68,3 +68,8 @@ body.news-view .shell-backdrop { opacity:.7; }
 .minecraft-news-item p { display:none; }
 .minecraft-news-item small { margin-top:auto; }
 @media(max-width:900px) { .news-feed{grid-template-columns:1fr;} .news-card-featured{grid-column:1; grid-template-columns:1fr;}.news-card-featured .news-card-image{min-height:150px}.news-live-column{grid-column:1}.minecraft-news-list{grid-template-columns:repeat(2,minmax(0,1fr));} }
+body.news-view main, body.news-view #news, body.news-view .news-feed, body.news-view .news-live-column { background: transparent !important; backdrop-filter: none !important; }
+.news-live-heading { display:none !important; }
+.minecraft-news-item { position:relative; overflow:hidden; background-color:#10223166 !important; }
+.minecraft-news-item::after { content:''; position:absolute; top:0; right:0; bottom:0; width:120px; background:linear-gradient(90deg,#102231ee 0%,#10223166 55%,transparent),var(--news-image) center/cover no-repeat; opacity:.95; pointer-events:none; }
+.minecraft-news-item > * { position:relative; z-index:1; max-width:72%; }
