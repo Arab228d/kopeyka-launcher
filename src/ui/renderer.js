@@ -470,7 +470,7 @@ async function showReleaseNews(automatic = false) {
 }
 async function refreshMinecraftNews() {
   if (!api.minecraftNews) return;
-  try { const items = await api.minecraftNews(); const first = items?.[0]; if (first) { $('minecraft-news-title').textContent = first.title; $('minecraft-news-body').textContent = items.slice(1, 3).map(item => item.title).join(' · ') || 'Новые публикации Minecraft'; $('minecraft-news-link').href = first.url; } } catch (error) { log('Новости Minecraft: ' + error.message); }
+  try { const items = await api.minecraftNews(); const list = $('minecraft-news-list'); if (!list) return; list.replaceChildren(...(items.length ? items.slice(0, 6).map((item, index) => { const article = document.createElement('a'); article.className = 'minecraft-news-item'; article.href = item.url; article.target = '_blank'; article.rel = 'noreferrer'; const kind = document.createElement('span'); kind.textContent = index === 0 ? 'СВЕЖЕЕ' : 'MINECRAFT'; const title = document.createElement('strong'); title.textContent = item.title; const meta = document.createElement('small'); meta.textContent = 'Открыть публикацию ↗'; article.append(kind, title, meta); return article; }) : [Object.assign(document.createElement('p'), { textContent: 'Новости временно недоступны. Повтори позже.' })])); } catch (error) { log('Новости Minecraft: ' + error.message); }
 }
 refreshMinecraftNews();
 window.addEventListener('ui-revealed', () => { uiRevealed = true; if (releaseNewsReady) showReleaseNews(true); });
