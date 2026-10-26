@@ -46,3 +46,25 @@ body.news-view .shell-backdrop { opacity: .65; }
 .minecraft-news-item.featured { min-height:145px; padding:16px 18px; background-size:150px 100%; }
 .minecraft-news-item.compact { min-height:54px; justify-content:center; }
 .minecraft-news-item.compact small, .minecraft-news-item.compact p { display:none; }
+/* Final news composition: reuse Mods/Shaders geometry and surfaces. */
+.news-top-button { width:100% !important; height:36px !important; min-height:36px !important; padding:0 10px !important; }
+body.news-view main { background:transparent; }
+body.news-view .shell-backdrop { opacity:.7; }
+#news { height:var(--content-height); padding:22px 22px 16px; gap:16px; background:transparent; backdrop-filter:none; overflow-y:auto; }
+.news-intro { min-height:56px; padding:0 4px 10px; border-bottom:1px solid #d6e5f52b; }
+.news-intro h2 { font-size:22px; margin:0; }
+.news-feed { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; max-width:none; margin-top:0; }
+.news-card { border:7px solid transparent; border-image:var(--frame-normal) 12 fill / 9px / 0 stretch; background:#10223155; box-shadow:none; }
+.news-card-featured { grid-column:1/-1; min-height:250px; display:grid; grid-template-columns:42% 1fr; padding:0; }
+.news-card-featured .news-card-image { min-height:100%; }
+.news-card-featured .news-card-copy { align-self:end; padding:20px 22px; background:linear-gradient(90deg,#10223122,#102231cc); }
+.news-card-minecraft { display:none; }
+.news-live-column { grid-column:1/-1; display:block; }
+.news-live-heading { padding:0 4px 9px; margin-bottom:10px; border-bottom:1px solid #d6e5f52b; }
+.minecraft-news-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; max-height:none; overflow:visible; }
+.minecraft-news-item, .minecraft-news-item.featured, .minecraft-news-item.compact { min-height:128px; padding:15px 16px; border:7px solid transparent; border-image:var(--frame-normal) 12 fill / 9px / 0 stretch; background:linear-gradient(90deg,#102231dd,#102231bb),var(--news-image) right center/90px 100% no-repeat,#10223155; justify-content:flex-start; }
+.minecraft-news-item:hover { border-image-source:var(--frame-hover); }
+.minecraft-news-item strong { font-size:11px; }
+.minecraft-news-item p { display:none; }
+.minecraft-news-item small { margin-top:auto; }
+@media(max-width:900px) { .news-feed{grid-template-columns:1fr;} .news-card-featured{grid-column:1; grid-template-columns:1fr;}.news-card-featured .news-card-image{min-height:150px}.news-live-column{grid-column:1}.minecraft-news-list{grid-template-columns:repeat(2,minmax(0,1fr));} }
