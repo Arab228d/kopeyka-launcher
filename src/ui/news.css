@@ -98,3 +98,10 @@ body.news-view .shell-backdrop { opacity:.78 !important; }
 body.news-view #shell-art { filter:blur(13px) saturate(.82) brightness(.72) !important; transform:scale(1.045) !important; }
 body.news-view main { background:#10223135 !important; backdrop-filter:none !important; }
 body.news-view #news, body.news-view #news .news-feed { background:#10223138 !important; }
+/* Final grid: no opaque news canvas and no empty left column. */
+body.news-view #news .news-feed { display:grid; grid-template-columns:1fr; gap:14px; padding:0; border:0; background:transparent !important; }
+body.news-view #news .news-card-featured { grid-column:1; grid-row:auto; min-height:300px; }
+body.news-view #news .news-live-column { grid-column:1; display:block; }
+body.news-view #news .minecraft-news-list { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
+body.news-view #news .minecraft-news-item, body.news-view #news .minecraft-news-item.featured, body.news-view #news .minecraft-news-item.compact { min-height:130px; }
+@media(max-width:900px) { body.news-view #news .minecraft-news-list { grid-template-columns:repeat(2,minmax(0,1fr)); } }
