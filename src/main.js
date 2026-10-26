@@ -127,11 +127,18 @@ app.whenReady().then(async () => {
   ipcMain.handle("launcher:release-news", () => releaseNews.current());
   ipcMain.handle("launcher:release-news-seen", () => releaseNews.acknowledge());
   let minecraftNewsCache = { at: 0, items: [] };
+  const translationCache = new Map();
+  const translateToRussian = async text => {
+    if (!text || /[А-Яа-яЁё]/.test(text)) return text;
+    if (translationCache.has(text)) return translationCache.get(text);
+    try { const url = 'https://api.mymemory.translated.net/get?q=' + encodeURIComponent(text.slice(0, 480)) + '&langpair=en|ru'; const data = await (await fetch(url, { signal: AbortSignal.timeout(5000) })).json(); const translated = data.responseData?.translatedText; if (translated) translationCache.set(text, translated); return translated || text; } catch { return text; }
+  };
   ipcMain.handle('launcher:minecraft-news', async () => {
     if (Date.now() - minecraftNewsCache.at < 600000 && minecraftNewsCache.items.length) return minecraftNewsCache.items;
     try {
       const data = await (await fetch('https://www.minecraft.net/content/minecraftnet/language-masters/en-us/jcr:content/root/container/image_grid_a_copy_64.articles.page-1.json', { signal: AbortSignal.timeout(8000) })).json();
-      const items = (data.article_grid || []).map(entry => ({ title: entry.default_tile?.title, summary: entry.default_tile?.sub_header, category: entry.primary_category, image: entry.default_tile?.image?.imageURL ? 'https://www.minecraft.net' + entry.default_tile.image.imageURL : null, url: entry.article_url ? 'https://www.minecraft.net' + entry.article_url : null })).filter(item => item.title && item.url).slice(0, 6);
+      const rawItems = (data.article_grid || []).map(entry => ({ title: entry.default_tile?.title, summary: entry.default_tile?.sub_header, category: entry.primary_category, image: entry.default_tile?.image?.imageURL ? 'https://www.minecraft.net' + entry.default_tile.image.imageURL : null, url: entry.article_url ? 'https://www.minecraft.net' + entry.article_url : null })).filter(item => item.title && item.url).slice(0, 6);
+      const items = await Promise.all(rawItems.map(async item => ({ ...item, title: await translateToRussian(item.title), summary: await translateToRussian(item.summary) })));
       if (items.length) minecraftNewsCache = { at: Date.now(), items };
       return minecraftNewsCache.items;
     } catch { return minecraftNewsCache.items; }
