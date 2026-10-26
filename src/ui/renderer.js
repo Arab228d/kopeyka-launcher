@@ -33,6 +33,14 @@ function page(name) {
 }
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => page(el.dataset.page)));
 function status(message, error = false) { $('status').textContent = message; $('status').parentElement.hidden = !message; $('status').parentElement.classList.toggle('error', error); }
+window.addEventListener('error', event => {
+  console.error('Renderer error:', event.error || event.message);
+  if (!busy && !modsBusy) status('Ошибка интерфейса. Открой журнал для подробностей.', true);
+});
+window.addEventListener('unhandledrejection', event => {
+  console.error('Unhandled renderer rejection:', event.reason);
+  if (!busy && !modsBusy) status('Не удалось выполнить операцию. Повтори действие.', true);
+});
 function updateAvatar(element, nickname) {
   if (!api.avatar || element.dataset.nickname === nickname) return;
   element.dataset.nickname = nickname;
