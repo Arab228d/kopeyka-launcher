@@ -45,3 +45,7 @@
 .launch-glow { filter: none; transition: filter .2s ease; }
 .launch-glow:has(.launch-button:hover:not(:disabled)), .launch-glow:has(.launch-button:focus-visible) { filter: drop-shadow(0 0 5px #7cff44aa) drop-shadow(0 0 15px #31ef2c66); }
 @media (max-width: 1100px) { .launch-side { gap: 6px; font-size: 8px; } .action-icon { width: 18px; height: 18px; } .nav-button { gap: 10px; padding-left: 7px; padding-right: 7px; } }
+/* A selected version should not stay highlighted after the pointer leaves. */
+.version-shell:focus-within { --frame: var(--frame-normal); }
+.version-shell:hover { --frame: var(--frame-hover); }
+.version-shell select:focus-visible { outline: 2px solid #d5b15d; outline-offset: -3px; }
