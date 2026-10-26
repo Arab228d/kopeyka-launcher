@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://cdn.modrinth.com; connect-src 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https://cdn.modrinth.com https://www.minecraft.net https://launchercontent.mojang.com; connect-src 'none'">
   <title>KOPEYKA Laucher</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="play-button.css">
@@ -57,7 +57,7 @@
     <nav>
       <button class="nav-button active" data-page="home"><span class="nav-icon" aria-hidden="true"></span>Minecraft Java<span class="nav-dot"></span></button>
     </nav>
-    <div class="sidebar-bottom"><button class="nav-button news-top-button" data-page="news"><span class="nav-icon" aria-hidden="true">✦</span>Новости<span class="nav-dot"></span></button><div class="sidebar-tools"><button class="nav-button" data-page="logs" title="Журнал запуска" aria-label="Журнал запуска"><span class="nav-icon" aria-hidden="true">≡</span>Журнал</button><button class="nav-button" id="card-folder" title="Папка игры" aria-label="Папка игры"><span class="nav-icon" aria-hidden="true">▣</span>Папка</button></div><button class="profile" id="profiles-open" aria-label="Редактор профилей" aria-haspopup="dialog"><div class="avatar"><i></i></div><div class="profile-info"><strong id="profile-name">Player</strong><span class="profile-status" aria-hidden="true"></span></div><span class="profile-marker" aria-hidden="true"></span></button></div>
+    <div class="sidebar-bottom"><button class="nav-button news-button" data-page="news" title="Новости" aria-label="Новости"><span class="nav-icon" aria-hidden="true">✦</span>Новости</button><div class="sidebar-tools"><button class="nav-button" data-page="logs" title="Журнал запуска" aria-label="Журнал запуска"><span class="nav-icon" aria-hidden="true">≡</span>Журнал</button><button class="nav-button" id="card-folder" title="Папка игры" aria-label="Папка игры"><span class="nav-icon" aria-hidden="true">▣</span>Папка</button></div><button class="profile" id="profiles-open" aria-label="Редактор профилей" aria-haspopup="dialog"><div class="avatar"><i></i></div><div class="profile-info"><strong id="profile-name">Player</strong><span class="profile-status" aria-hidden="true"></span></div><span class="profile-marker" aria-hidden="true"></span></button></div>
   </aside>
   <main>
     <section id="home" class="page">
@@ -93,7 +93,22 @@
       <div class="mods-footer"><div class="mods-footer-info"><strong id="mods-selection">Установлено</strong><p id="mods-status" role="status" aria-live="polite"></p><progress id="mods-progress" max="100" hidden></progress></div></div>
     </section>
     <section id="logs" class="page" hidden><div class="page-intro"><h2>Журнал запуска</h2><p class="logs-caption">События Minecraft и детали последнего запуска.</p></div><div class="log-toolbar"><span class="log-session">Текущая сессия</span><div class="log-actions"><button class="secondary-button" id="export-log">Сохранить журнал</button> <button class="secondary-button" id="clear-log">Очистить экран</button></div></div><div class="log-surface"><pre id="log" role="log" aria-label="События запуска"></pre><div class="log-empty"><span class="log-empty-icon" aria-hidden="true"></span><strong>Здесь начнётся история запуска</strong><p>Запусти Minecraft — сообщения игры появятся здесь. При ошибке сохрани журнал.</p></div></div></section>
-    <section id="news" class="page" hidden><div class="page-intro news-intro"><h2>Новости</h2></div><div class="news-feed"><article class="news-card news-card-featured"><div class="news-card-image news-card-image-launcher"></div><div class="news-card-copy"><span class="news-card-kind">KOPEYKA · GITHUB</span><h3 id="news-launcher-title">KOPEYKA 0.2.0 beta</h3><p id="news-launcher-body">Загрузка новостей лаунчера…</p><small id="news-launcher-date">GitHub release notes</small></div></article><section class="news-live-column"><div id="minecraft-news-list" class="minecraft-news-list"><p class="news-loading">Получаем свежие материалы Minecraft…</p></div></section></div></section>
+    <section id="news" class="page" hidden>
+      <div class="news-intro"><h2>Новости</h2><span id="news-status-line" role="status" aria-live="polite"></span></div>
+      <div class="news-scroll">
+        <article id="news-featured" class="news-card news-featured" hidden>
+          <div class="news-image"><img id="news-featured-image" src="assets/home-artwork.avif" alt="" draggable="false"></div>
+          <div class="news-copy">
+            <span class="news-kind">KOPEYKA · GITHUB</span>
+            <h3 id="news-launcher-title">KOPEYKA</h3>
+            <p id="news-launcher-body"></p>
+            <div class="news-meta"><small id="news-launcher-date"></small><a id="news-launcher-link" class="news-link" href="#">Все изменения ↗</a></div>
+          </div>
+        </article>
+        <p id="news-empty" class="news-empty">Загружаем новости…</p>
+        <div id="minecraft-news-list" class="news-grid"></div>
+      </div>
+    </section>
   </main>
   </div>
     <div id="launch-overlay" hidden role="status" aria-live="polite"><div class="launch-branding"><div class="loading-pixel" aria-hidden="true"></div><p>Загрузка игры<span class="loading-dots" aria-hidden="true">…</span></p><div class="loading-track" id="launch-indeterminate"><i></i></div><progress id="launch-progress" max="100" value="0" hidden></progress><small id="launch-detail"></small></div></div>

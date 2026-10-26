@@ -24,7 +24,10 @@ app.whenReady().then(async () => {
     ipcMain.handle('launcher:loader-catalog', () => ({fabric: {'26.3':true, '1.21.1':true, '1.20.1':true}, forge:{'1.21.1':'52.0.16'}, neoforge:{'1.21.1':'21.1.257'},optifine:{'1.21.1':'OptiFine_1.21.1_HD_U_J1.jar'},forge_optifine:{'1.21.1':{forge:'52.0.16',optifine:'OptiFine_1.21.1_HD_U_J1.jar'}},errors:[]}));
     ipcMain.handle('launcher:release-news', () => ({version:'0.1.1-beta',body:'Новый редактор профилей\nПиксельные карточки и стеклянное окно.',unread:false}));
     ipcMain.handle('launcher:release-news-seen', () => {});
-    ipcMain.handle('launcher:minecraft-news', () => [{ title: 'Minecraft test news', summary: 'Test summary', category: 'News', image: null, url: 'https://www.minecraft.net/en-us/article/test-news' }]);
+    const newsItems = Array.from({ length: 7 }, (_, index) => ({ title: `Minecraft test news ${index} ` + 'long title '.repeat(index % 3 * 4), category: 'News', image: index === 0 ? 'assets/home-artwork.avif' : index === 1 ? 'https://www.minecraft.net/missing.png' : null, url: 'https://www.minecraft.net/en-us/article/test-news-' + index }));
+    const opened = [];
+    ipcMain.handle('launcher:news', () => ({ launcher: { title: 'KOPEYKA 0.2.0 beta', body: 'Новая вкладка новостей.\n• Кэш и перевод', date: '2026-10-20T10:00:00Z', url: 'https://github.com/Arab228d/kopeyka-launcher/releases/tag/v0.2.0-beta' }, minecraft: newsItems, updatedAt: Date.now(), stale: false }));
+    ipcMain.handle('launcher:open-external', (_, url) => { opened.push(url); });
     ipcMain.handle('launcher:update-check', () => ({version:'0.4.0'}));
     ipcMain.handle('launcher:update-install', () => { throw new Error('Test download failure'); });
     let savedSettings;
@@ -186,6 +189,32 @@ app.whenReady().then(async () => {
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('news-dialog').open && document.getElementById('news-body').textContent.includes('Новый редактор')"),true);
     await fs.writeFile(path.join(output, 'release-news.png'), (await window.webContents.capturePage()).toPNG());
     await window.webContents.executeJavaScript("document.getElementById('news-done').click()"); await delay(350);
+    // News tab: transparent Mods-style page, real images, equal cards and a button that does not change size.
+    const inPage = code => window.webContents.executeJavaScript(code);
+    const buttonsBefore = await inPage("(() => { const r = s => document.querySelector(s).getBoundingClientRect(); return {news: r('.news-button').height, logs: r('[data-page=logs]').height, folder: r('#card-folder').height, newsWidth: r('.news-button').width, profile: r('#profiles-open').width, top: r('.news-button').bottom <= r('[data-page=logs]').top}; })()");
+    assert.equal(buttonsBefore.news, buttonsBefore.logs, 'News button has the height of Журнал');
+    assert.equal(buttonsBefore.news, buttonsBefore.folder, 'News button has the height of Папка');
+    assert.equal(buttonsBefore.newsWidth, buttonsBefore.profile, 'News button has the width of the profile button');
+    assert.equal(buttonsBefore.top, true, 'News button sits above Журнал and Папка');
+    await inPage("document.querySelector('.news-button').click()"); await delay(700);
+    assert.equal(await inPage("document.body.classList.contains('news-view') && !document.getElementById('news').hidden && document.querySelector('.news-button').classList.contains('active')"), true);
+    assert.equal(await inPage("document.querySelectorAll('#minecraft-news-list .news-small').length"), 7);
+    assert.equal(await inPage("document.getElementById('news-featured').hidden === false && document.getElementById('news-launcher-title').textContent"), 'KOPEYKA 0.2.0 beta');
+    const surfaces = await inPage("(() => { const out = []; for (const el of [document.body, document.querySelector('main'), document.getElementById('news'), document.querySelector('.news-scroll'), document.querySelector('.news-intro')]) { const s = getComputedStyle(el); out.push([el.tagName + '#' + el.id, s.backgroundColor, s.backgroundImage, s.backdropFilter]); } return out; })()");
+    for (const [name, color, image, backdrop] of surfaces.slice(1)) { assert.match(color, /^rgba\(0, 0, 0, 0\)$|^transparent$/, name + ' has no background colour'); assert.equal(image, 'none', name + ' has no background image'); assert.equal(backdrop, 'none', name + ' has no backdrop-filter'); }
+    assert.equal(await inPage("getComputedStyle(document.getElementById('shell-art')).filter"), 'blur(6px)', 'Only a soft blur on the shared artwork');
+    assert.equal(await inPage("(() => [...document.querySelectorAll('main, #news, #news *')].filter(el => ['::before', '::after'].some(p => !['none', 'normal'].includes(getComputedStyle(el, p).content))).length)()"), 0, 'News has no ::before/::after layers');
+    assert.equal(await inPage("(() => [...document.querySelectorAll('#news, #news *')].filter(el => /gradient/.test(getComputedStyle(el).backgroundImage)).length)()"), 0, 'News has no gradients');
+    assert.equal(await inPage("(() => { const rows = new Map(); for (const card of document.querySelectorAll('.news-small')) { const r = card.getBoundingClientRect(); rows.set(Math.round(r.top), [...(rows.get(Math.round(r.top)) || []), Math.round(r.height)]); } return [...rows.values()].every(list => list.every(h => h === list[0])); })()"), true, 'Cards in a row share one height');
+    assert.equal(await inPage("document.querySelector('.news-small img').complete && document.querySelector('.news-small img').naturalWidth > 0"), true, 'News image loads');
+    assert.equal(await inPage("document.querySelectorAll('.news-small .news-image.placeholder').length"), 6, 'Missing and failed images use the Minecraft placeholder');
+    assert.equal(await inPage("document.querySelector('.news-small p, .news-small .news-copy p') === null"), true, 'Small cards have no description');
+    const buttonsAfter = await inPage("(() => { const r = s => document.querySelector(s).getBoundingClientRect(); return [r('.news-button').height, r('.news-button').width]; })()");
+    assert.deepEqual(buttonsAfter, [buttonsBefore.news, buttonsBefore.newsWidth], 'Active News button keeps its size');
+    await inPage("document.querySelector('.news-small').click()"); await delay(100);
+    assert.deepEqual(opened, ['https://www.minecraft.net/en-us/article/test-news-0']);
+    await fs.writeFile(path.join(output, 'news.png'), (await window.webContents.capturePage()).toPNG());
+    await inPage("document.querySelector('[data-page=home]').click()"); await delay(300);
     for (let index = 0; index < 300; index++) window.webContents.send('launcher:event', { kind: 'log', message: `Buffered log sample ${index}` });
     await delay(250);
     assert.equal(await window.webContents.executeJavaScript("document.getElementById('log').textContent"), '', 'Hidden journal does not update the DOM for each line');

@@ -3,7 +3,7 @@
   mask: none;
   image-rendering: pixelated;
 }
-.news-top-button .nav-icon { width: 22px; height: 22px; background: url('assets/generated-icons/news.png') center / contain no-repeat; font-size: 0; }
+.news-button .nav-icon { background: url('assets/generated-icons/news.png') center / contain no-repeat; font-size: 0; }
 [data-page=home] .nav-icon { background: url('assets/generated-icons/creeper.png') center / contain no-repeat; }
 [data-page=logs] .nav-icon { background: url('assets/generated-icons/logs.png') center / contain no-repeat; }
 #card-folder .nav-icon { background: url('assets/generated-icons/folder.png') center / contain no-repeat; }

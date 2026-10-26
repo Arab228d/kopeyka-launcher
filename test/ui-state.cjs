@@ -30,6 +30,7 @@ app.whenReady().then(async () => {
     ipcMain.handle('launcher:save', (_, input) => input);
     ipcMain.handle('launcher:update-check', () => null);
     ipcMain.handle('launcher:release-news', () => ({ unread: false }));
+    ipcMain.handle('launcher:news', () => ({ launcher: null, minecraft: [], updatedAt: 0, stale: true }));
     ipcMain.handle('launcher:content-list', (_, profile) => deferMods ? new Promise(resolve => pendingMods.push({ profile, resolve })) : []);
     ipcMain.handle('launcher:shaders-search', (_, profile) => deferShaders ? new Promise(resolve => pendingShaders.push({ profile, resolve })) : ({ total: 0, hits: [] }));
     const errors = [];

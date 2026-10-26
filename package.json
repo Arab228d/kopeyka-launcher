@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js test/shaders.test.js test/catalog-updates.test.js test/optifine.test.js test/persistence.test.js test/release-news.test.js test/background-catalog.test.js test/installed-content.test.js test/content-media.test.js test/catalog.test.js test/startup.test.cjs",
+    "test": "node --test test/config.test.js test/auth.test.js test/minecraft-textures.test.js test/installer.test.js test/mods.test.js test/launch-health.test.js test/progress-events.test.js test/shaders.test.js test/catalog-updates.test.js test/optifine.test.js test/persistence.test.js test/release-news.test.js test/news-feed.test.js test/background-catalog.test.js test/installed-content.test.js test/content-media.test.js test/catalog.test.js test/startup.test.cjs",
     "test:ui": "electron test/ui-smoke.cjs && electron test/ui-state.cjs",
     "build": "npm run build:installer",
     "build:installer": "npm run prepare:runtimes && electron-builder --win nsis --x64",

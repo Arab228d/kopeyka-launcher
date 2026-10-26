@@ -31,6 +31,7 @@ function page(name) {
   document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.page === name || el.dataset.page === 'home' && ['mods', 'settings'].includes(name)));
   if (name === 'mods' && config) { updateModProfile(); refreshInstalled(); }
   if (name === 'logs') flushLogs();
+  if (name === 'news') refreshNews();
 }
 document.querySelectorAll('[data-page]').forEach(el => el.addEventListener('click', () => page(el.dataset.page)));
 function status(message, error = false) { $('status').textContent = message; $('status').parentElement.hidden = !message; $('status').parentElement.classList.toggle('error', error); }
@@ -461,7 +462,6 @@ async function showReleaseNews(automatic = false) {
   if (!api.releaseNews) return;
   try {
     const news = await api.releaseNews();
-    if ($('news-launcher-title')) { $('news-launcher-title').textContent = news.version || 'Новости KOPEYKA'; $('news-launcher-body').textContent = news.body || 'Новых заметок пока нет.'; $('news-launcher-date').textContent = 'Обновления лаунчера'; }
     if (automatic && !news.unread) return;
     $('news-version').textContent = 'Версия ' + news.version;
     $('news-body').textContent = news.body;
@@ -469,11 +469,53 @@ async function showReleaseNews(automatic = false) {
     if (!document.querySelector('dialog[open]')) $('news-dialog').showModal();
   } catch (error) { log('Что нового: ' + error.message); }
 }
-async function refreshMinecraftNews() {
-  if (!api.minecraftNews) return;
-  try { const items = await api.minecraftNews(); const list = $('minecraft-news-list'); if (!list) return; list.replaceChildren(...(items.length ? items.slice(0, 6).map((item, index) => { const article = document.createElement('a'); article.className = 'minecraft-news-item ' + (index === 0 ? 'featured' : 'compact'); article.href = item.url; article.target = '_blank'; article.rel = 'noreferrer'; if (item.image) article.style.setProperty('--news-image', `url("${item.image}")`); const kind = document.createElement('span'); kind.textContent = index === 0 ? 'СВЕЖЕЕ' : (item.category || 'MINECRAFT'); const title = document.createElement('strong'); title.textContent = item.title; const summary = document.createElement('p'); summary.textContent = item.summary || ''; const meta = document.createElement('small'); meta.textContent = 'Открыть публикацию ↗'; article.append(kind, title, summary, meta); return article; }) : [Object.assign(document.createElement('p'), { textContent: 'Новости временно недоступны. Повтори позже.' })])); } catch (error) { log('Новости Minecraft: ' + error.message); }
+const newsDate = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+function formatNewsDate(value) { const time = Date.parse(value); return Number.isFinite(time) ? newsDate.format(time) : (value || ''); }
+function openNewsLink(event) {
+  event.preventDefault();
+  const url = event.currentTarget.dataset.url;
+  if (url && api.openExternal) api.openExternal(url).catch(error => log('Не удалось открыть ссылку: ' + error.message));
 }
-refreshMinecraftNews();
+function newsPicture(src) {
+  const frame = document.createElement('div'); frame.className = 'news-image';
+  const placeholder = () => { frame.classList.add('placeholder'); frame.replaceChildren(); };
+  if (!src) { placeholder(); return frame; }
+  const image = document.createElement('img'); image.alt = ''; image.decoding = 'async'; image.draggable = false; image.src = src;
+  image.addEventListener('error', placeholder, { once: true });
+  frame.append(image); return frame;
+}
+function newsCard(item) {
+  const card = document.createElement('a'); card.className = 'news-card news-small'; card.href = '#'; card.dataset.url = item.url; card.addEventListener('click', openNewsLink);
+  const copy = document.createElement('div'); copy.className = 'news-copy';
+  const kind = document.createElement('span'); kind.className = 'news-kind'; kind.textContent = item.category || 'Minecraft';
+  const title = document.createElement('h3'); title.textContent = item.title;
+  copy.append(kind, title); card.append(newsPicture(item.image), copy); return card;
+}
+let newsLoading = false, newsLoadedAt = 0;
+async function refreshNews(force = false) {
+  if (!api.news || newsLoading || (!force && Date.now() - newsLoadedAt < 60000)) return;
+  newsLoading = true;
+  try {
+    const data = await api.news(force);
+    const local = api.releaseNews ? await api.releaseNews().catch(() => null) : null;
+    const launcher = data.launcher || (local && { title: 'KOPEYKA ' + local.version, body: local.body, date: '', url: 'https://github.com/Arab228d/kopeyka-launcher/releases' });
+    $('news-featured').hidden = !launcher;
+    if (launcher) {
+      $('news-launcher-title').textContent = launcher.title;
+      $('news-launcher-body').textContent = launcher.body || 'Обновлены функции и исправлены ошибки лаунчера.';
+      $('news-launcher-date').textContent = formatNewsDate(launcher.date);
+      const link = $('news-launcher-link'); link.dataset.url = launcher.url; link.onclick = openNewsLink;
+    }
+    const items = (data.minecraft || []).filter(item => item.title && item.url);
+    $('minecraft-news-list').replaceChildren(...items.map(newsCard));
+    $('news-empty').hidden = items.length > 0 || Boolean(launcher);
+    $('news-empty').textContent = 'Новости пока недоступны. Проверь подключение к интернету.';
+    $('news-status-line').textContent = data.stale ? (data.updatedAt ? 'Нет связи · показаны сохранённые новости' : 'Нет связи с сервером новостей') : '';
+    newsLoadedAt = data.stale ? 0 : Date.now();
+  } catch (error) { log('Новости: ' + error.message); $('news-empty').hidden = false; $('news-empty').textContent = 'Новости пока недоступны. Повтори позже.'; }
+  finally { newsLoading = false; }
+}
+refreshNews();
 window.addEventListener('ui-revealed', () => { uiRevealed = true; if (releaseNewsReady) showReleaseNews(true); });
 async function prepareReleaseNews() { releaseNewsReady = true; if (uiRevealed) await showReleaseNews(true); }
 prepareReleaseNews();

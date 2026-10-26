@@ -1,111 +1,47 @@
-/* News page: transparent glass surfaces matching Mods */
+/* News page. Same shell, frames, spacing and colours as Mods/Shaders (mods-glass.css, refinements.css).
+   The page itself is transparent: the shared Minecraft artwork shows through, only softly blurred.
+   No page background, no overlays, no gradients, no pseudo-elements. */
 body.news-view main { background: transparent; }
-body.news-view .shell-backdrop { opacity: .65; }
-#news { min-height: var(--content-height); padding: 22px 24px 18px; background: #10223145; backdrop-filter: blur(8px); }
-.news-intro { display:flex; align-items:end; justify-content:space-between; min-height:64px; padding:0 4px 15px; border-bottom:1px solid #d6e5f52b; }
-.news-intro h2 { margin:0; font-size:24px; text-shadow:2px 3px #102231; }
-.news-intro p { margin:0; color:#d0dce6; font-size:11px; }
-.news-feed { display:grid; grid-template-columns:minmax(0,1.55fr) minmax(290px,.9fr); gap:14px; max-width:1160px; margin-top:16px; }
-.news-card { border:8px solid transparent; border-image:var(--frame-normal) 12 fill / 10px / 0 stretch; background:#10223155; min-width:0; }
-.news-card-featured { grid-row:span 2; min-height:360px; display:flex; flex-direction:column; padding:0; }
-.news-card-minecraft { min-height:205px; display:flex; padding:0; }
-.news-card-image { flex:0 0 42%; min-height:120px; background-position:center; background-size:cover; image-rendering:auto; }
-.news-card-image-launcher { background-image:linear-gradient(90deg,#0d1b25aa,#0d1b2500),url('assets/home-artwork.avif'); }
-.news-card-image-minecraft { flex-basis:38%; background-image:linear-gradient(90deg,#0d1b25aa,#0d1b2500),url('assets/minecraft-logo.png'); background-color:#172d3d; background-size:80%,cover; background-repeat:no-repeat; }
-.news-card-copy { padding:20px 22px; min-width:0; }
-.news-card-featured .news-card-copy { margin-top:auto; background:linear-gradient(180deg,#0d1b2500,#0d1b25dd 18%); }
-.news-card-kind { display:block; color:#e2c36b; font:9px/1.4 PlayPixel,monospace; letter-spacing:1px; }
-.news-card h3 { margin:10px 0 9px; font:16px/1.5 PlayPixel,monospace; color:#fff0bd; text-shadow:2px 2px #071018; }
-.news-card p { margin:0 0 14px; color:#d0dfe2; font:11px/1.65 'Segoe UI',sans-serif; }
-.news-card small { color:#9fb4ba; font-size:10px; }
-.news-card a { color:#e7ca72; font-size:11px; text-decoration:none; }
-.news-card a:hover { text-decoration:underline; }
-.news-small-grid { grid-column:2; display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-.news-card-small { min-height:145px; padding:18px; }
-.news-card-small h3 { font-size:12px; margin-top:12px; }
-.news-card-small p { color:#b9cbd1; font-size:10px; }
-@media(max-width:900px) { .news-feed { grid-template-columns:1fr; } .news-card-featured { grid-row:auto; } .news-small-grid { grid-column:auto; } .news-intro { display:block; } .news-intro p { margin-top:8px; } }
-#news { background: transparent; backdrop-filter: none; }
-.news-feed { grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); align-items: stretch; }
-.news-card-featured { grid-row: auto; min-height: 420px; }
-.news-live-column { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.news-live-heading { display:flex; align-items:center; justify-content:space-between; padding: 2px 4px 8px; border-bottom: 1px solid #d6e5f52b; }
-.news-live-heading a { color:#e7ca72; font-size:10px; text-decoration:none; }
-.news-live-heading a:hover { text-decoration:underline; }
-.minecraft-news-list { display:grid; gap:8px; overflow:auto; max-height:420px; padding-right:3px; }
-.minecraft-news-item { display:flex; flex-direction:column; gap:5px; padding:13px 15px; border:6px solid transparent; border-image:var(--frame-normal) 12 fill / 8px / 0 stretch; background:linear-gradient(90deg,#102231ee,#102231cc),var(--news-image) right center/110px 100% no-repeat,#10223166; color:#e8f1f4; text-decoration:none; }
-.minecraft-news-item:hover { border-image-source:var(--frame-hover); background:#20384a88; }
-.minecraft-news-item span { color:#dfbf65; font:8px/1.4 PlayPixel,monospace; letter-spacing:1px; }
-.minecraft-news-item strong { color:#f5e8b4; font:11px/1.45 PlayPixel,monospace; }
-.minecraft-news-item small { color:#9fb4ba; font-size:9px; }
-.minecraft-news-item p { margin:0; color:#b9cbd1; font-size:10px; line-height:1.4; max-width:70%; }
-.news-loading { color:#aebfc5; font-size:11px; padding:12px; }
-@media(max-width:900px) { .news-feed { grid-template-columns:1fr; } .news-card-featured { min-height:300px; } }
-.news-top-button { height:36px !important; min-height:36px !important; padding:0 10px !important; margin-bottom:8px; }
-.news-intro { min-height:48px; padding-bottom:15px; }
-.minecraft-news-item.featured { min-height:145px; padding:16px 18px; background-size:150px 100%; }
-.minecraft-news-item.compact { min-height:54px; justify-content:center; }
-.minecraft-news-item.compact small, .minecraft-news-item.compact p { display:none; }
-/* Final news composition: reuse Mods/Shaders geometry and surfaces. */
-.news-top-button { width:100% !important; height:36px !important; min-height:36px !important; padding:0 10px !important; }
-body.news-view main { background:transparent; }
-body.news-view .shell-backdrop { opacity:.7; }
-#news { height:var(--content-height); padding:22px 22px 16px; gap:16px; background:transparent; backdrop-filter:none; overflow-y:auto; }
-.news-intro { min-height:56px; padding:0 4px 10px; border-bottom:1px solid #d6e5f52b; }
-.news-intro h2 { font-size:22px; margin:0; }
-.news-feed { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; max-width:none; margin-top:0; }
-.news-card { border:7px solid transparent; border-image:var(--frame-normal) 12 fill / 9px / 0 stretch; background:#10223155; box-shadow:none; }
-.news-card-featured { grid-column:1/-1; min-height:250px; display:grid; grid-template-columns:42% 1fr; padding:0; }
-.news-card-featured .news-card-image { min-height:100%; }
-.news-card-featured .news-card-copy { align-self:end; padding:20px 22px; background:linear-gradient(90deg,#10223122,#102231cc); }
-.news-card-minecraft { display:none; }
-.news-live-column { grid-column:1/-1; display:block; }
-.news-live-heading { padding:0 4px 9px; margin-bottom:10px; border-bottom:1px solid #d6e5f52b; }
-.minecraft-news-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; max-height:none; overflow:visible; }
-.minecraft-news-item, .minecraft-news-item.featured, .minecraft-news-item.compact { min-height:128px; padding:15px 16px; border:7px solid transparent; border-image:var(--frame-normal) 12 fill / 9px / 0 stretch; background:linear-gradient(90deg,#102231dd,#102231bb),var(--news-image) right center/90px 100% no-repeat,#10223155; justify-content:flex-start; }
-.minecraft-news-item:hover { border-image-source:var(--frame-hover); }
-.minecraft-news-item strong { font-size:11px; }
-.minecraft-news-item p { display:none; }
-.minecraft-news-item small { margin-top:auto; }
-@media(max-width:900px) { .news-feed{grid-template-columns:1fr;} .news-card-featured{grid-column:1; grid-template-columns:1fr;}.news-card-featured .news-card-image{min-height:150px}.news-live-column{grid-column:1}.minecraft-news-list{grid-template-columns:repeat(2,minmax(0,1fr));} }
-body.news-view main, body.news-view #news, body.news-view .news-feed, body.news-view .news-live-column { background: transparent !important; backdrop-filter: none !important; }
-.news-live-heading { display:none !important; }
-.minecraft-news-item { position:relative; overflow:hidden; background-color:#10223166 !important; }
-.minecraft-news-item::after { content:''; position:absolute; top:0; right:0; bottom:0; width:120px; background:linear-gradient(90deg,#102231ee 0%,#10223166 55%,transparent),var(--news-image) center/cover no-repeat; opacity:.95; pointer-events:none; }
-.minecraft-news-item > * { position:relative; z-index:1; max-width:72%; }
-/* Full artwork backdrop for the transparent news surface. */
-body.news-view .app-shell { background: url('assets/home-artwork.avif') center/cover no-repeat !important; }
-body.news-view main { background: #0d192455 !important; backdrop-filter: blur(9px) saturate(.82); }
-body.news-view #news { background: transparent !important; }
-.news-top-button { height:36px !important; min-height:36px !important; padding:0 10px !important; }
-/* News is a Mods-style page: same shell, spacing and transparent panel. */
-#news { height:var(--content-height); padding:24px 0 12px; gap:18px; background:transparent !important; backdrop-filter:none !important; overflow-y:auto; }
-#news .news-intro { min-height:84px; padding:0 4px 14px; border-bottom:1px solid #d6e5f52b; display:flex; align-items:flex-end; }
-#news .news-intro h2 { font-size:22px; margin:0; }
-#news .news-feed { flex:1; min-height:0; max-width:none; margin:0; padding:20px; overflow:visible; display:grid; grid-template-columns:minmax(0,1.35fr) minmax(280px,.9fr); gap:14px; border:8px solid transparent; border-image:var(--frame-normal) 12 fill / 10px / 0 stretch; background:#10223155; }
-#news .news-card { border:7px solid transparent; border-image:var(--frame-normal) 12 fill / 9px / 0 stretch; background:#11243855; box-shadow:none; }
-#news .news-card-featured { grid-row:span 2; min-height:330px; }
-#news .news-live-column { grid-column:2; display:flex; min-width:0; }
-#news .minecraft-news-list { display:grid; grid-template-columns:1fr; gap:10px; width:100%; max-height:none; overflow:visible; }
-#news .minecraft-news-item, #news .minecraft-news-item.featured, #news .minecraft-news-item.compact { min-height:92px; padding:14px; border:6px solid transparent; border-image:var(--frame-normal) 12 fill / 8px / 0 stretch; background:linear-gradient(90deg,#102231e8,#102231bb),var(--news-image) right center/90px 100% no-repeat,#10223155; }
-#news .minecraft-news-item.featured { min-height:135px; }
-#news .minecraft-news-item:hover { border-image-source:var(--frame-hover); }
-#news .news-card-minecraft { display:none; }
-@media(max-width:900px) { #news .news-feed { grid-template-columns:1fr; } #news .news-card-featured { grid-row:auto; } #news .news-live-column { grid-column:1; } }
-/* Actual news blur: blur the artwork layer itself, then keep the UI surfaces translucent. */
-body.news-view .app-shell { background:none !important; }
-body.news-view .shell-backdrop { opacity:.78 !important; }
-body.news-view #shell-art { filter:blur(13px) saturate(.82) brightness(.72) !important; transform:scale(1.045) !important; }
-body.news-view main { background:#10223135 !important; backdrop-filter:none !important; }
-body.news-view #news, body.news-view #news .news-feed { background:#10223138 !important; }
-/* Final grid: no opaque news canvas and no empty left column. */
-body.news-view #news .news-feed { display:grid; grid-template-columns:1fr; gap:14px; padding:0; border:0; background:transparent !important; }
-body.news-view #news .news-card-featured { grid-column:1; grid-row:auto; min-height:300px; }
-body.news-view #news .news-live-column { grid-column:1; display:block; }
-body.news-view #news .minecraft-news-list { grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; }
-body.news-view #news .minecraft-news-item, body.news-view #news .minecraft-news-item.featured, body.news-view #news .minecraft-news-item.compact { min-height:130px; }
-@media(max-width:900px) { body.news-view #news .minecraft-news-list { grid-template-columns:repeat(2,minmax(0,1fr)); } }
-/* No global dark veil on news: only the artwork blur and card surfaces remain. */
-body.news-view .shell-backdrop { opacity:1 !important; }
-body.news-view #shell-art { filter:blur(13px) saturate(.9) !important; }
-body.news-view main, body.news-view #news, body.news-view #news .news-feed { background:transparent !important; }
+body.news-view #shell-art { filter: blur(6px); }
+
+#news { height: var(--content-height); padding: 22px 22px 16px; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.news-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-shrink: 0; min-height: 56px; padding: 0 4px 10px; border-bottom: 1px solid #d6e5f52b; }
+.news-intro h2 { margin: 0; font: 22px/1.3 PlayPixel, monospace; color: #f1e9d2; text-shadow: 2px 3px #102231; }
+#news-status-line { color: #c1d1df; font: 12px/1.6 'Segoe UI', sans-serif; }
+.news-scroll { flex: 1; min-height: 0; padding: 0 4px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-color: #7994a7 transparent; scrollbar-width: thin; }
+.news-empty { margin: 0; padding: 30px; text-align: center; color: #bccedc; font: 13px/1.8 'Segoe UI', sans-serif; }
+
+/* Card frame: identical to #mods .mod-card. */
+.news-card { display: flex; min-width: 0; padding: 0; color: inherit; text-decoration: none; background: #11243855; border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; clip-path: var(--surface-shape); }
+a.news-card:hover { border-image-source: var(--frame-hover); background: #1b3a5655; }
+a.news-card:focus-visible { outline: 2px solid #d3ad58; outline-offset: 2px; }
+
+.news-image { position: relative; overflow: hidden; background: #172c3f55; }
+.news-image img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
+/* Neutral Minecraft placeholder: the block icon on the flat panel colour. */
+.news-image.placeholder { background: #172c3f55 url('assets/sidebar-icons/grass-cube.svg') center / 52px no-repeat; image-rendering: pixelated; }
+.news-copy { display: flex; flex-direction: column; min-width: 0; }
+.news-kind { color: #e2c36b; font: 8px/1.5 PlayPixel, monospace; letter-spacing: 1px; text-transform: uppercase; }
+.news-card h3 { margin: 0; color: #eef5fb; text-shadow: 2px 2px #10202c; overflow-wrap: anywhere; }
+
+/* Featured release: one large card with the big picture and the description. */
+.news-featured { flex-direction: row; min-height: 280px; }
+.news-featured .news-image { flex: 0 0 52%; }
+.news-featured .news-copy { flex: 1; gap: 12px; padding: 22px 24px; }
+.news-featured h3 { font: 18px/1.5 PlayPixel, monospace; color: #fff0bd; }
+.news-featured p { margin: 0; flex: 1; min-height: 0; overflow: hidden; color: #dbe7ef; font: 13px/1.7 'Segoe UI', sans-serif; white-space: pre-line; }
+.news-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.news-meta small { color: #b9c8d5; font: 11px 'Segoe UI', sans-serif; }
+.news-link { color: #e7ca72; font: 12px 'Segoe UI', sans-serif; text-decoration: none; }
+.news-link:hover { text-decoration: underline; }
+
+/* Minecraft news: an even grid, every card in a row is the same height. */
+.news-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); grid-auto-rows: 1fr; gap: 16px; }
+.news-small { flex-direction: column; height: 100%; }
+.news-small .news-image { flex: 0 0 140px; height: 140px; }
+.news-small .news-copy { flex: 1; gap: 8px; padding: 12px 14px 14px; }
+.news-small h3 { font: 10px/1.6 PlayPixel, monospace; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+
+@media (max-width: 1100px) { #news { padding: 16px; } .news-featured .news-image { flex-basis: 46%; } }
+@media (max-width: 900px) { .news-featured { flex-direction: column; } .news-featured .news-image { flex: 0 0 180px; } }
+@media (max-height: 800px) { #news { padding-top: 12px; gap: 12px; } .news-intro { min-height: 44px; } .news-featured { min-height: 230px; } }
