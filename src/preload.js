@@ -28,6 +28,7 @@ contextBridge.exposeInMainWorld('launcher', {
   listInstalled: settings => ipcRenderer.invoke('launcher:content-list', settings),
   importMods: settings => ipcRenderer.invoke('launcher:mods-import', settings),
   toggleMod: (settings, file) => ipcRenderer.invoke('launcher:mods-toggle', settings, file),
+  copyMods: (source, target) => ipcRenderer.invoke('launcher:mods-copy', source, target),
   importOptifine: settings => ipcRenderer.invoke('launcher:optifine-import', settings),
   optifineSite: () => ipcRenderer.invoke('launcher:optifine-site'),
   onEvent: handler => { ipcRenderer.on('launcher:event', (_, event) => handler(event)); }

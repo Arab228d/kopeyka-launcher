@@ -267,4 +267,19 @@ async function toggleMod(config, file) {
   try { await fs.access(inside(root, target)); throw new Error('Файл назначения уже существует.'); } catch (error) { if (error.code !== 'ENOENT') throw error; }
   await fs.rename(inside(root, file), inside(root, target));
 }
-module.exports = { modrinth, mediaUrl, profileDirectory, searchMods, resolveMods, installMods, importMods, listMods, toggleMod, compatible, safeJar };
+async function copyMods(sourceConfig, targetConfig) {
+  requireLoader(sourceConfig); requireLoader(targetConfig);
+  const source = path.join(profileDirectory(sourceConfig), 'mods');
+  const target = path.join(profileDirectory(targetConfig), 'mods');
+  const files = await fs.readdir(source, { withFileTypes: true }).catch(error => error.code === 'ENOENT' ? [] : Promise.reject(error));
+  await fs.mkdir(target, { recursive: true });
+  let copied = 0;
+  for (const entry of files) {
+    if (entry.isDirectory() || !/\.jar(?:\.disabled)?$/i.test(entry.name)) continue;
+    const destination = inside(target, entry.name);
+    try { await fs.access(destination); continue; } catch (error) { if (error.code !== 'ENOENT') throw error; }
+    await fs.copyFile(inside(source, entry.name), destination); copied++;
+  }
+  return copied;
+}
+module.exports = { modrinth, mediaUrl, profileDirectory, searchMods, resolveMods, installMods, importMods, listMods, toggleMod, copyMods, compatible, safeJar };

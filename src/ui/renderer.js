@@ -282,6 +282,15 @@ $('loader').addEventListener('change', async () => {
   updateModProfile(); updateControls(); $('optifine-status').textContent = '';
   try { config = await api.save(current()); await refreshInstalled(); } catch (error) { modStatus(error.message, true); }
 });
+$('mods-copy').addEventListener('click', async () => {
+  if (!versionsReady || busy || modsBusy) return;
+  const choices = [...$('version').options].map(option => option.value).filter(value => value && value !== $('version').value);
+  if (!choices.length) return modStatus('Нет другой сборки для копирования.', true);
+  const selected = window.prompt('Куда скопировать моды? Введи версию и загрузчик, например 1.21.1|fabric.\nДоступно: ' + choices.join(', '), choices[0]);
+  if (!selected || !choices.includes(selected)) return modStatus('Выбери сборку из списка.', true);
+  const [version, loader = 'vanilla'] = selected.split('|');
+  try { modsBusy = true; updateControls(); const count = await api.copyMods(current(), { ...current(), version, loader }); modStatus(`Скопировано модов: ${count}.`); } catch (error) { modStatus(error.message, true); } finally { modsBusy = false; updateControls(); }
+});
 $('mods-import').addEventListener('click', () => modOperation(async () => { const files = await api.importMods(current()); await refreshInstalled(); return files.length ? 'Добавлено модов: ' + files.length + '.' : ''; }));
 $('optifine-import').addEventListener('click', () => modOperation(async () => { const file = await api.importOptifine(current()); if (file) $('optifine-status').textContent = file; return file ? 'OptiFine выбран. Нажми «Играть», чтобы установить и запустить.' : ''; }));
 $('optifine-site').addEventListener('click', () => api.optifineSite().catch(error => modStatus(error.message, true)));

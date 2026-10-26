@@ -180,6 +180,7 @@ app.whenReady().then(async () => {
     return result.canceled ? [] : mods.importMods(checkedProfile(input), result.filePaths);
   }));
   ipcMain.handle('launcher:mods-toggle', (_, input, file) => modAction(() => mods.toggleMod(checkedProfile(input), file)));
+  ipcMain.handle('launcher:mods-copy', (_, source, target) => modAction(() => mods.copyMods(checkedProfile(source), checkedProfile(target))));
   ipcMain.handle('launcher:optifine-import', (_, input) => modAction(async () => {
     const result = await dialog.showOpenDialog(window, { title: 'Установщик OptiFine', properties: ['openFile'], filters: [{ name: 'OptiFine', extensions: ['jar'] }] });
     return result.canceled ? null : importOptifine(checkedProfile(input), result.filePaths[0]);
