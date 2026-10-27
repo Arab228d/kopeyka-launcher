@@ -16,7 +16,7 @@ const GITHUB_RELEASES = `https://api.github.com/repos/${REPO}/releases?per_page=
 const LAUNCHER_NEWS = `https://raw.githubusercontent.com/${REPO}/main/content/launcher-news.json`;
 const TRANSLATE_URL = 'https://api.mymemory.translated.net/get';
 const FRESH_MS = 10 * 60 * 1000;
-const MINECRAFT_LIMIT = 24;
+const MINECRAFT_LIMIT = 36;
 const MINECRAFT_PAGES = 3;
 const TRANSLATION_LIMIT = 400;
 const CACHE_SCHEMA = 3;

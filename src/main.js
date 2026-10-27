@@ -129,6 +129,8 @@ app.whenReady().then(async () => {
   ipcMain.handle("launcher:release-news-seen", () => releaseNews.acknowledge());
   const newsFeed = createNewsFeed({ directory: stableData });
   ipcMain.handle('launcher:news', (_, refresh) => newsFeed.get(refresh === true));
+  // Warm the news cache during startup so the Новости page opens instantly.
+  newsFeed.get().catch(() => {});
   ipcMain.handle('launcher:open-external', async (_, url) => { if (!trustedExternal(url)) throw new Error('Ссылка не разрешена.'); await shell.openExternal(url); });
   const publishTime = () => send({ kind: 'playtime', seconds: playtime.total() });
   const checkpoint = stop => playtime.checkpoint(stop).then(publishTime).catch(error => send({ kind: 'log', message: 'Не удалось сохранить время игры: ' + error.message }));

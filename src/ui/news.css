@@ -41,6 +41,7 @@ a.news-card:focus-visible { outline: 2px solid #d3ad58; outline-offset: 2px; }
 .news-small .news-image { flex: 0 0 140px; height: 140px; }
 .news-small .news-copy { flex: 1; gap: 8px; padding: 12px 14px 14px; }
 .news-small h3 { font: 10px/1.6 PlayPixel, monospace; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.news-load-more { align-self: center; min-width: 210px; margin: 2px 0 8px; }
 
 @media (max-width: 1100px) { #news { padding: 16px; } .news-featured .news-image { flex-basis: 46%; } }
 @media (max-width: 900px) { .news-featured { flex-direction: column; } .news-featured .news-image { flex: 0 0 180px; } }

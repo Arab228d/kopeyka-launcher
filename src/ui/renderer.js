@@ -491,7 +491,13 @@ function newsCard(item) {
   const title = document.createElement('h3'); title.textContent = item.title;
   copy.append(kind, title); card.append(newsPicture(item.image), copy); return card;
 }
-let newsLoading = false, newsLoadedAt = 0;
+let newsLoading = false, newsLoadedAt = 0, newsItems = [], newsVisible = 12;
+function renderNewsItems() {
+  const list = $('minecraft-news-list');
+  list.replaceChildren(...newsItems.slice(0, newsVisible).map(newsCard));
+  const more = $('news-load-more');
+  more.hidden = newsVisible >= newsItems.length;
+}
 async function refreshNews(force = false) {
   if (!api.news || newsLoading || (!force && Date.now() - newsLoadedAt < 60000)) return;
   newsLoading = true;
@@ -506,8 +512,10 @@ async function refreshNews(force = false) {
       $('news-launcher-date').textContent = formatNewsDate(launcher.date);
       const link = $('news-launcher-link'); link.dataset.url = launcher.url; link.onclick = openNewsLink;
     }
-    const items = (data.minecraft || []).filter(item => item.title && item.url);
-    $('minecraft-news-list').replaceChildren(...items.map(newsCard));
+    newsItems = (data.minecraft || []).filter(item => item.title && item.url);
+    newsVisible = Math.min(newsVisible, 12);
+    renderNewsItems();
+    const items = newsItems;
     $('news-empty').hidden = items.length > 0 || Boolean(launcher);
     $('news-empty').textContent = 'Новости пока недоступны. Проверь подключение к интернету.';
     $('news-status-line').textContent = data.stale ? (data.updatedAt ? 'Нет связи · показаны сохранённые новости' : 'Нет связи с сервером новостей') : (data.updatedAt ? 'Обновлено ' + formatNewsDate(data.updatedAt) : '');
@@ -515,6 +523,7 @@ async function refreshNews(force = false) {
   } catch (error) { log('Новости: ' + error.message); $('news-empty').hidden = false; $('news-empty').textContent = 'Новости пока недоступны. Повтори позже.'; }
   finally { newsLoading = false; }
 }
+$("news-load-more").addEventListener('click', () => { newsVisible += 12; renderNewsItems(); });
 // Keep the feed current while the launcher stays open; this is independent of launcher updates.
 setInterval(() => { if (document.body.classList.contains('news-view')) refreshNews(true); }, 10 * 60 * 1000);
 refreshNews();
