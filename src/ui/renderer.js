@@ -510,11 +510,13 @@ async function refreshNews(force = false) {
     $('minecraft-news-list').replaceChildren(...items.map(newsCard));
     $('news-empty').hidden = items.length > 0 || Boolean(launcher);
     $('news-empty').textContent = 'Новости пока недоступны. Проверь подключение к интернету.';
-    $('news-status-line').textContent = data.stale ? (data.updatedAt ? 'Нет связи · показаны сохранённые новости' : 'Нет связи с сервером новостей') : '';
+    $('news-status-line').textContent = data.stale ? (data.updatedAt ? 'Нет связи · показаны сохранённые новости' : 'Нет связи с сервером новостей') : (data.updatedAt ? 'Обновлено ' + formatNewsDate(data.updatedAt) : '');
     newsLoadedAt = data.stale ? 0 : Date.now();
   } catch (error) { log('Новости: ' + error.message); $('news-empty').hidden = false; $('news-empty').textContent = 'Новости пока недоступны. Повтори позже.'; }
   finally { newsLoading = false; }
 }
+// Keep the feed current while the launcher stays open; this is independent of launcher updates.
+setInterval(() => { if (document.body.classList.contains('news-view')) refreshNews(true); }, 10 * 60 * 1000);
 refreshNews();
 window.addEventListener('ui-revealed', () => { uiRevealed = true; if (releaseNewsReady) showReleaseNews(true); });
 async function prepareReleaseNews() { releaseNewsReady = true; if (uiRevealed) await showReleaseNews(true); }

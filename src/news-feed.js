@@ -12,12 +12,14 @@ const MINECRAFT_JSON = MINECRAFT_NET + '/content/minecraftnet/language-masters/e
 const LAUNCHER_CONTENT = 'https://launchercontent.mojang.com';
 const LAUNCHER_JSON = LAUNCHER_CONTENT + '/v2/news.json';
 const GITHUB_RELEASES = `https://api.github.com/repos/${REPO}/releases?per_page=10`;
+// This small file can be edited on GitHub without publishing a new launcher build.
+const LAUNCHER_NEWS = `https://raw.githubusercontent.com/${REPO}/main/content/launcher-news.json`;
 const TRANSLATE_URL = 'https://api.mymemory.translated.net/get';
 const FRESH_MS = 10 * 60 * 1000;
 const MINECRAFT_LIMIT = 9;
 const TRANSLATION_LIMIT = 400;
 // Hosts the renderer is allowed to open in the system browser.
-const EXTERNAL_HOSTS = new Set(['www.minecraft.net', 'minecraft.net', 'launchercontent.mojang.com', 'github.com']);
+const EXTERNAL_HOSTS = new Set(['www.minecraft.net', 'minecraft.net', 'launchercontent.mojang.com', 'github.com', 'raw.githubusercontent.com']);
 
 const clean = (value, max) => typeof value === 'string' ? value.replace(/\s+/g, ' ').trim().slice(0, max) : '';
 function absolute(base, value) {
@@ -55,6 +57,17 @@ function parseGithubRelease(releases) {
     date: clean(release.published_at || release.created_at, 40),
     url: url && trustedExternal(url) ? url : `https://github.com/${REPO}/releases`
   };
+}
+
+function parseLauncherNews(data) {
+  const entries = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
+  return entries.map(item => ({
+    title: clean(item?.title, 160),
+    body: plainText(item?.body || item?.summary || '', 1200),
+    date: clean(item?.date || item?.publishedAt, 40),
+    url: absolute('https://github.com', item?.url || item?.html_url),
+    image: absolute('https://raw.githubusercontent.com', item?.image)
+  })).filter(item => item.title && item.url);
 }
 
 function parseMinecraftNet(data) {
@@ -136,6 +149,10 @@ function createNewsFeed({ directory, request = fetch, now = Date.now }) {
   const translateBody = async text => (await Promise.all(text.split('\n').map(line => translate(line)))).join('\n');
 
   async function fetchLauncher() {
+    try {
+      const managed = parseLauncherNews(await json(LAUNCHER_NEWS));
+      if (managed.length) return managed[0];
+    } catch {}
     return parseGithubRelease(await json(GITHUB_RELEASES, { Accept: 'application/vnd.github+json' }));
   }
   async function fetchMinecraft() {
@@ -175,4 +192,4 @@ function createNewsFeed({ directory, request = fetch, now = Date.now }) {
   return { get };
 }
 
-module.exports = { createNewsFeed, parseGithubRelease, parseMinecraftNet, parseLauncherContent, plainText, trustedExternal, MINECRAFT_LIMIT };
+module.exports = { createNewsFeed, parseGithubRelease, parseLauncherNews, parseMinecraftNet, parseLauncherContent, plainText, trustedExternal, MINECRAFT_LIMIT };
