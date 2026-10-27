@@ -18,6 +18,7 @@ const TRANSLATE_URL = 'https://api.mymemory.translated.net/get';
 const FRESH_MS = 10 * 60 * 1000;
 const MINECRAFT_LIMIT = 9;
 const TRANSLATION_LIMIT = 400;
+const CACHE_SCHEMA = 2;
 // Hosts the renderer is allowed to open in the system browser.
 const EXTERNAL_HOSTS = new Set(['www.minecraft.net', 'minecraft.net', 'launchercontent.mojang.com', 'github.com', 'raw.githubusercontent.com']);
 
@@ -97,7 +98,7 @@ function parseLauncherContent(data) {
   })).filter(item => item.title && item.url);
 }
 
-const emptyCache = () => ({ at: 0, launcher: null, minecraft: [], translations: {} });
+const emptyCache = () => ({ schema: CACHE_SCHEMA, at: 0, launcher: null, minecraft: [], translations: {} });
 
 function createNewsFeed({ directory, request = fetch, now = Date.now }) {
   const file = path.join(directory, 'news-cache.json');
@@ -112,11 +113,13 @@ function createNewsFeed({ directory, request = fetch, now = Date.now }) {
         const saved = JSON.parse(await fs.readFile(file + suffix, 'utf8'));
         if (!saved || typeof saved !== 'object' || Array.isArray(saved)) continue;
         cache = {
+          schema: CACHE_SCHEMA,
           at: Number.isFinite(saved.at) ? saved.at : 0,
           launcher: saved.launcher && typeof saved.launcher === 'object' ? saved.launcher : null,
           minecraft: Array.isArray(saved.minecraft) ? saved.minecraft : [],
           translations: saved.translations && typeof saved.translations === 'object' && !Array.isArray(saved.translations) ? saved.translations : {}
         };
+        if (saved.schema !== CACHE_SCHEMA) { cache.at = 0; cache.launcher = null; cache.minecraft = []; }
         break;
       } catch (error) { if (!(error instanceof SyntaxError) && error.code !== 'ENOENT') throw error; }
     }
