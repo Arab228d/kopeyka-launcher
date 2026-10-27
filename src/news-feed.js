@@ -8,7 +8,7 @@ const { jsonWriter } = require('./persistence');
 
 const REPO = 'Arab228d/kopeyka-launcher';
 const MINECRAFT_NET = 'https://www.minecraft.net';
-const MINECRAFT_JSON = MINECRAFT_NET + '/content/minecraftnet/language-masters/en-us/jcr:content/root/container/image_grid_a_copy_64.articles.page-1.json';
+const MINECRAFT_JSON = MINECRAFT_NET + '/content/minecraftnet/language-masters/en-us/jcr:content/root/container/image_grid_a_copy_64.articles.page-';
 const LAUNCHER_CONTENT = 'https://launchercontent.mojang.com';
 const LAUNCHER_JSON = LAUNCHER_CONTENT + '/v2/news.json';
 const GITHUB_RELEASES = `https://api.github.com/repos/${REPO}/releases?per_page=10`;
@@ -16,7 +16,8 @@ const GITHUB_RELEASES = `https://api.github.com/repos/${REPO}/releases?per_page=
 const LAUNCHER_NEWS = `https://raw.githubusercontent.com/${REPO}/main/content/launcher-news.json`;
 const TRANSLATE_URL = 'https://api.mymemory.translated.net/get';
 const FRESH_MS = 10 * 60 * 1000;
-const MINECRAFT_LIMIT = 9;
+const MINECRAFT_LIMIT = 24;
+const MINECRAFT_PAGES = 3;
 const TRANSLATION_LIMIT = 400;
 const CACHE_SCHEMA = 2;
 // Hosts the renderer is allowed to open in the system browser.
@@ -160,7 +161,11 @@ function createNewsFeed({ directory, request = fetch, now = Date.now }) {
   }
   async function fetchMinecraft() {
     let items = [];
-    try { items = parseMinecraftNet(await json(MINECRAFT_JSON)); } catch {}
+    try {
+      const pages = await Promise.all(Array.from({ length: MINECRAFT_PAGES }, (_, i) => json(MINECRAFT_JSON + (i + 1) + '.json').catch(() => null)));
+      const seen = new Set();
+      for (const page of pages) for (const item of parseMinecraftNet(page)) if (!seen.has(item.url)) { seen.add(item.url); items.push(item); }
+    } catch {}
     if (!items.length) items = parseLauncherContent(await json(LAUNCHER_JSON));
     items = items.slice(0, MINECRAFT_LIMIT);
     // Titles for every card; the longer summary only where it is displayed.

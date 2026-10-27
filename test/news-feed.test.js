@@ -48,7 +48,7 @@ test('news are fetched, translated, limited and cached; offline start serves the
   const online = network();
   const feed = createNewsFeed({ directory: dir, request: online.request });
   const first = await feed.get();
-  assert.equal(first.stale, false); assert.equal(first.minecraft.length, MINECRAFT_LIMIT);
+  assert.equal(first.stale, false); assert.equal(first.minecraft.length, Math.min(MINECRAFT_LIMIT, 12));
   assert.equal(first.minecraft[0].title, 'RU:Article 0'); assert.equal(first.minecraft[0].summary, '');
   assert.equal(first.launcher.title, 'KOPEYKA 0.2.0 beta');
   const callsAfterFirst = online.calls.length;
@@ -57,7 +57,7 @@ test('news are fetched, translated, limited and cached; offline start serves the
   const offline = network({ github: null, minecraft: null, translate: false });
   const restarted = createNewsFeed({ directory: dir, request: offline.request, now: () => Date.now() + 3600000 });
   const cached = await restarted.get();
-  assert.equal(cached.stale, true); assert.equal(cached.minecraft.length, MINECRAFT_LIMIT); assert.equal(cached.launcher.title, 'KOPEYKA 0.2.0 beta');
+  assert.equal(cached.stale, true); assert.equal(cached.minecraft.length, Math.min(MINECRAFT_LIMIT, 12)); assert.equal(cached.launcher.title, 'KOPEYKA 0.2.0 beta');
   assert.equal(cached.minecraft[0].title, 'RU:Article 0');
 });
 
