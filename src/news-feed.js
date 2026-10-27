@@ -19,7 +19,7 @@ const FRESH_MS = 10 * 60 * 1000;
 const MINECRAFT_LIMIT = 24;
 const MINECRAFT_PAGES = 3;
 const TRANSLATION_LIMIT = 400;
-const CACHE_SCHEMA = 2;
+const CACHE_SCHEMA = 3;
 // Hosts the renderer is allowed to open in the system browser.
 const EXTERNAL_HOSTS = new Set(['www.minecraft.net', 'minecraft.net', 'launchercontent.mojang.com', 'github.com', 'raw.githubusercontent.com']);
 
