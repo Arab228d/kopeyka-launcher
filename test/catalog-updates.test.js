@@ -6,6 +6,14 @@ test('catalog refresh retains cached loader availability when servers fail',asyn
 const bytes=Buffer.from('verified installer');
 const asset={name:'KOPEYKA-Laucher-Setup-0.4.0.exe',state:'uploaded',size:bytes.length,digest:'sha256:'+crypto.createHash('sha256').update(bytes).digest('hex'),browser_download_url:'https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.4.0/KOPEYKA-Laucher-Setup-0.4.0.exe'};
 test('update check compares versions and rejects drafts, older builds and foreign installers',async()=>{assert.equal(newer('v0.3','0.2.2-beta'),true);assert.equal(newer('0.3.0-beta','0.3.0'),false);const update=await checkUpdate('0.3.0',async()=>Response.json([{tag_name:'v0.2.2-beta',assets:[asset]},{tag_name:'v9.0.0',draft:true,assets:[asset]},{tag_name:'v1.0.0',prerelease:true,assets:[asset]},{tag_name:'v0.5.0',assets:[{...asset,browser_download_url:'https://evil.example/setup.exe'}]},{tag_name:'v0.4.0',assets:[asset]}]));assert.equal(update.version,'0.4.0');});
+test('updater accepts both the corrected and the historical installer names', async () => {
+  const renamed = { ...asset, name: 'KOPEYKA-Launcher-Setup-0.4.0.exe', browser_download_url: 'https://github.com/Arab228d/kopeyka-launcher/releases/download/v0.4.0/KOPEYKA-Launcher-Setup-0.4.0.exe' };
+  const legacy = await checkUpdate('0.3.0', async () => Response.json([{ tag_name: 'v0.4.0', assets: [asset] }]));
+  const current = await checkUpdate('0.3.0', async () => Response.json([{ tag_name: 'v0.4.0', assets: [renamed] }]));
+  assert.equal(legacy.asset.name, 'KOPEYKA-Laucher-Setup-0.4.0.exe');
+  assert.equal(current.asset.name, 'KOPEYKA-Launcher-Setup-0.4.0.exe');
+  assert.equal(await checkUpdate('0.3.0', async () => Response.json([{ tag_name: 'v0.4.0', assets: [{ ...renamed, name: 'KOPEYKA-Setup-0.4.0.exe' }] }])), null);
+});
 test('orders beta and release candidate updates using their complete prerelease identifiers', async () => {
   assert.equal(newer('0.4.0-beta.10', '0.4.0-beta.2'), true);
   assert.equal(newer('0.4.0-beta.2', '0.4.0-beta.10'), false);

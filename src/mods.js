@@ -11,7 +11,7 @@ const jarMedia = new Map();
 let jarMediaBytes = 0;
 const failedMedia = new Map();
 const registryWriters = new Map();
-const headers = { 'User-Agent': `KOPEYKA-Laucher/${require('../package.json').version} (Minecraft desktop launcher)` };
+const headers = { 'User-Agent': `KOPEYKA-Launcher/${require('../package.json').version} (Minecraft desktop launcher)` };
 function profileDirectory(config) {
   validateSettings(config, config);
   return config.loader === 'vanilla' ? config.gameDirectory : inside(config.gameDirectory, `profiles/${config.version}-${config.loader}`);

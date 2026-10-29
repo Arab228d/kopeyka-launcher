@@ -1,7 +1,7 @@
 {
   "name": "kopeyka-launcher",
   "version": "0.2.0-beta",
-  "description": "KOPEYKA Laucher — Minecraft Java launcher for Windows",
+  "description": "KOPEYKA Launcher — Minecraft Java launcher for Windows",
   "main": "src/main.js",
   "author": "KOPEYKA",
   "private": true,
@@ -31,7 +31,7 @@
   },
   "build": {
     "appId": "ru.kopeyka.launcher",
-    "productName": "KOPEYKA Laucher",
+    "productName": "KOPEYKA Launcher",
     "directories": {
       "output": "dist"
     },
@@ -46,13 +46,13 @@
       "icon": "build/icon.ico"
     },
     "nsis": {
-      "artifactName": "KOPEYKA-Laucher-Setup-${version}.exe",
+      "artifactName": "KOPEYKA-Launcher-Setup-${version}.exe",
       "oneClick": true,
       "perMachine": false,
       "allowToChangeInstallationDirectory": false,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "KOPEYKA Laucher",
+      "shortcutName": "KOPEYKA Launcher",
       "deleteAppDataOnUninstall": false,
       "installerLanguages": [
         "ru_RU"
@@ -62,7 +62,7 @@
       "uninstallerIcon": "build/icon.ico"
     },
     "portable": {
-      "artifactName": "KOPEYKA-Laucher-${version}.exe"
+      "artifactName": "KOPEYKA-Launcher-${version}.exe"
     },
     "extraResources": [
       {

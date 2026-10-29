@@ -31,7 +31,7 @@ function newer(a, b) {
   return false;
 }
 function releaseAsset(release) {
-  return Array.isArray(release?.assets) ? release.assets.find(a => a?.state === 'uploaded' && /^KOPEYKA-Laucher-Setup-[\w.-]+\.exe$/.test(a.name) && /^sha256:[a-f0-9]{64}$/i.test(a.digest || '') && Number.isSafeInteger(a.size) && a.size > 0 && a.size < 2 * 1024 ** 3 && trustedDownload(a.browser_download_url)) : undefined;
+  return Array.isArray(release?.assets) ? release.assets.find(a => a?.state === 'uploaded' && /^KOPEYKA-Laun?cher-Setup-[\w.-]+\.exe$/.test(a.name) && /^sha256:[a-f0-9]{64}$/i.test(a.digest || '') && Number.isSafeInteger(a.size) && a.size > 0 && a.size < 2 * 1024 ** 3 && trustedDownload(a.browser_download_url)) : undefined;
 }
 function trustedDownload(value) {
   try { const url = new URL(value); return url.protocol === 'https:' && url.hostname === 'github.com' && url.pathname.startsWith('/' + REPO + '/releases/download/'); } catch { return false; }
