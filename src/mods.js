@@ -188,6 +188,7 @@ async function importMods(config, files) {
     if (error.code !== 'EEXIST') throw error;
     if (!await validFile(job.destination, job)) throw new Error(`${job.name} уже существует. Сначала удали старый мод.`);
   });
+  await Promise.all(jobs.filter(job => job.target !== job.destination).map(job => fs.unlink(job.target).catch(() => {})));
   return jobs.map(v => v.name);
 }
 async function listMods(config, request = fetch, hydrateMedia = false) {

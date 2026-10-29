@@ -7,13 +7,13 @@ body.news-view #shell-art { filter: blur(6px); }
 #news { height: var(--content-height); padding: 22px 22px 16px; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
 .news-intro { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-shrink: 0; min-height: 56px; padding: 0 4px 10px; border-bottom: 1px solid #d6e5f52b; }
 .news-intro h2 { margin: 0; font: 22px/1.3 PlayPixel, monospace; color: #f1e9d2; text-shadow: 2px 3px #102231; }
-#news-status-line { color: #c1d1df; font: 12px/1.6 'Segoe UI', sans-serif; }
+#news-status-line { color: #dbe7ef; text-shadow: 1px 2px #0b1622; font: 12px/1.6 'Segoe UI', sans-serif; }
 .news-scroll { flex: 1; min-height: 0; padding: 0 4px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; scrollbar-color: #7994a7 transparent; scrollbar-width: thin; }
 .news-empty { margin: 0; padding: 30px; text-align: center; color: #bccedc; font: 13px/1.8 'Segoe UI', sans-serif; }
 
 /* Card frame: identical to #mods .mod-card. */
-.news-card { display: flex; min-width: 0; padding: 0; color: inherit; text-decoration: none; background: #11243855; border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; clip-path: var(--surface-shape); }
-a.news-card:hover { border-image-source: var(--frame-hover); background: #1b3a5655; }
+.news-card { display: flex; min-width: 0; padding: 0; color: inherit; text-decoration: none; background: #0f2338d9; border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; clip-path: var(--surface-shape); }
+a.news-card:hover { border-image-source: var(--frame-hover); background: #17324bd9; }
 a.news-card:focus-visible { outline: 2px solid #d3ad58; outline-offset: 2px; }
 
 .news-image { position: relative; overflow: hidden; background: #172c3f55; }
@@ -31,7 +31,7 @@ a.news-card:focus-visible { outline: 2px solid #d3ad58; outline-offset: 2px; }
 .news-featured h3 { font: 18px/1.5 PlayPixel, monospace; color: #fff0bd; }
 .news-featured p { margin: 0; flex: 1; min-height: 0; overflow: hidden; color: #dbe7ef; font: 13px/1.7 'Segoe UI', sans-serif; white-space: pre-line; }
 .news-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.news-meta small { color: #b9c8d5; font: 11px 'Segoe UI', sans-serif; }
+.news-meta small { color: #c9d6e2; font: 11px 'Segoe UI', sans-serif; }
 .news-link { color: #e7ca72; font: 12px 'Segoe UI', sans-serif; text-decoration: none; }
 .news-link:hover { text-decoration: underline; }
 

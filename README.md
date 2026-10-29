@@ -35,13 +35,15 @@ npm test
 npm run test:ui
 ```
 
+`npm test` включает проверку типов IPC-контракта (`npm run typecheck`, JSDoc + `checkJs`, без сборки TypeScript).
+
 Сборка установщика:
 
 ```powershell
 npm run build:installer
 ```
 
-Результат появится в `dist/`. Java runtime-файлы берутся из `build/`; игровые файлы Minecraft в репозиторий не входят.
+Результат появится в `dist/`. Java runtime-файлы берутся из `build/`; игровые файлы Minecraft в репозиторий не входят. Хелпер OptiFine компилируется из `src/optifine-helper/KopeykaOptifineInstall.java` во время `prepare:runtimes` и не хранится в git.
 
 ## Где хранятся данные
 
@@ -62,7 +64,10 @@ npm run build:installer
 
 - `src/main.js` — окно Electron, IPC и запуск игры.
 - `src/installer.js` — загрузка и проверка файлов.
+- `src/manifest.js` — runtime-валидация манифестов Minecraft, Forge, NeoForge и Fabric.
+- `src/ipc-contract.js` — каналы и JSDoc-типы IPC-моста.
 - `src/loaders.js` — Forge, Fabric, NeoForge и OptiFine.
+- `src/optifine-helper/` — исходник Java-хелпера; `.class` собирается при подготовке рантаймов.
 - `src/mods.js`, `src/shaders.js` — контент и профили сборок.
 - `src/ui/` — интерфейс лаунчера.
 - `test/` — автоматические проверки.
@@ -71,4 +76,4 @@ npm run build:installer
 
 Текущий тег: `v0.2.0-beta`.
 
-Последняя проверка: **75 автоматических тестов проходят**.
+Последняя проверка: **99 автоматических тестов проходят**, включая проверку типов.

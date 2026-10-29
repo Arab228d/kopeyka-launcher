@@ -42,7 +42,7 @@ require('../src/game-client').GameClient = class extends EventEmitter {
 };
 const writeFile = fsp.writeFile;
 fsp.writeFile = async function(file, ...args) {
-  if (path.basename(file) === 'versions-cache.json') throw Object.assign(new Error('Controlled cache write failure'), { code: 'EACCES' });
+  if (['versions-cache.json', 'versions-cache.json.tmp'].includes(path.basename(file))) throw Object.assign(new Error('Controlled cache write failure'), { code: 'EACCES' });
   return writeFile.call(this, file, ...args);
 };
 require('../src/main');

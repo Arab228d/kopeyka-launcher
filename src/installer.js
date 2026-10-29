@@ -4,12 +4,13 @@ const crypto = require('node:crypto');
 const path = require('node:path');
 const AdmZip = require('adm-zip');
 const { setTimeout: delay } = require('node:timers/promises');
+const manifest = require('./manifest');
 function downloadError(error, url) {
   const code = error.cause?.code || error.code || error.name;
   const host = new URL(url).hostname;
   if (/ENOTFOUND|EAI_AGAIN/.test(code)) return `Не удалось найти сервер ${host}. Проверь интернет и DNS.`;
   if (/CERT|TLS|SSL|ISSUER/.test(code)) return `Не удалось проверить защищённое соединение с ${host}. Проверь дату Windows и настройки сети.`;
-  if (/Timeout|UND_ERR.*TIMEOUT|ECONNRESET|ETIMEDOUT|fetch failed/i.test(`${code} ${error.message}`)) return `Соединение с ${host} прервано или сервер не ответил (${code}). Проверь интернет и нажми «Играть» снова — загрузка продолжится.`;
+  if (/Timeout|UND_ERR.*TIMEOUT|ECONNRESET|ETIMEDOUT|AbortError|aborted|fetch failed/i.test(`${code} ${error.message}`)) return `Соединение с ${host} прервано или сервер не ответил (${code}). Проверь интернет и нажми «Играть» снова — загрузка продолжится.`;
   return `${error.message} (${host})`;
 }
 
@@ -51,14 +52,20 @@ async function transferFile(descriptor, file, progress, request) {
   let lastError;
   for (let attempt = 1; attempt <= 3; attempt++) {
     if (attempt > 1) await delay(500 * (attempt - 1));
-    let handle;
+    let handle, idleTimer;
+    // A slow but steady transfer must not be killed by a total-duration limit.
+    // Only a stalled connection aborts: the timer restarts on every chunk.
+    const controller = new AbortController();
+    const keepAlive = () => { clearTimeout(idleTimer); idleTimer = setTimeout(() => controller.abort(), 30000); };
     try {
-      const response = await request(descriptor.url, { signal: AbortSignal.timeout(180000) });
+      keepAlive();
+      const response = await request(descriptor.url, { signal: controller.signal });
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       handle = await fs.open(partial, 'w');
       const hash = crypto.createHash('sha1'); let received = 0;
       const total = descriptor.size || Number(response.headers.get('content-length'));
       for await (const chunk of response.body) {
+        keepAlive();
         if (Number.isFinite(descriptor.size) && received + chunk.length > descriptor.size) throw new Error('Неверный размер файла');
         let offset = 0;
         while (offset < chunk.length) {
@@ -75,7 +82,7 @@ async function transferFile(descriptor, file, progress, request) {
     } catch (error) {
       lastError = error; if (handle) await handle.close().catch(() => {});
       await fs.unlink(partial).catch(() => {});
-    }
+    } finally { clearTimeout(idleTimer); }
   }
   throw new Error(`Не удалось скачать ${path.basename(file)} после 3 попыток. ${downloadError(lastError, descriptor.url)}`);
 }
@@ -107,15 +114,16 @@ async function prepareMinecraft(root, version, send = () => {}, options = {}) {
   const metadataFile = inside(directory, `${version.id}.json`);
   send({ kind: 'progress', percent: null, message: `Проверка Minecraft ${version.id}…` });
   await downloadFile(version, metadataFile);
-  const metadata = JSON.parse(await fs.readFile(metadataFile, 'utf8'));
-  if (metadata.id !== version.id) throw new Error('Каталог вернул другую версию Minecraft.');
+  const metadata = manifest.parseJson(await fs.readFile(metadataFile, 'utf8'), `манифест Minecraft ${version.id}`);
+  manifest.versionManifest(metadata, version.id);
   const assetRoot = options.assetRoot || path.join(root, 'assets');
   const indexFile = inside(assetRoot, `indexes/${version.id}.json`);
   await downloadFile(metadata.assetIndex, indexFile);
   // Modded profiles pass the official asset index ID to Minecraft.
   const officialIndex = inside(assetRoot, `indexes/${metadata.assetIndex.id}.json`);
   if (officialIndex !== indexFile) await fs.copyFile(indexFile, officialIndex);
-  const assets = JSON.parse(await fs.readFile(indexFile, 'utf8'));
+  const assets = manifest.parseJson(await fs.readFile(indexFile, 'utf8'), 'индекс ресурсов Minecraft');
+  manifest.assetIndex(assets);
   const jobs = [{ descriptor: metadata.downloads.client, file: inside(directory, `${version.id}.jar`) }];
   const natives = [];
   for (const library of metadata.libraries) {
@@ -130,7 +138,6 @@ async function prepareMinecraft(root, version, send = () => {}, options = {}) {
   }
   const uniqueAssets = new Map();
   for (const { hash, size } of Object.values(assets.objects)) {
-    if (!/^[a-f0-9]{40}$/.test(hash)) throw new Error('Некорректный индекс ресурсов Minecraft.');
     uniqueAssets.set(hash, { descriptor: { sha1: hash, size, url: `https://resources.download.minecraft.net/${hash.slice(0, 2)}/${hash}` }, file: inside(assetRoot, `objects/${hash.slice(0, 2)}/${hash}`) });
   }
   jobs.push(...uniqueAssets.values());

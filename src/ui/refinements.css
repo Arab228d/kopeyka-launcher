@@ -5,7 +5,7 @@
 .inactive-action { visibility: hidden; pointer-events: none; }
 .mods-tabs { gap: 8px; border: 0; padding: 0; }
 #mods .mods-tabs .secondary-button { min-width: 0; min-height: 40px; padding: 10px 16px; }
-#mods-installed, #shaders-panel { flex: 1; min-height: 0; padding: 20px; overflow-y: auto; scrollbar-color: #7994a7 #142332; border: 8px solid transparent; border-image: var(--frame-normal) 12 / 10px / 0 stretch; background: #10223155; }
+#mods-installed, #shaders-panel { flex: 1; min-height: 0; padding: 20px; overflow-y: auto; scrollbar-color: #7994a7 #142332; border: 8px solid transparent; border-image: var(--frame-normal) 12 / 10px / 0 stretch; background: rgba(9,20,31,.94); }
 .mods-profile { padding: 15px 18px; }
 .mods-empty { min-height: 230px; }
 .mods-footer { padding: 0 2px; }

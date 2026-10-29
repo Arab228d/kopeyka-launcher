@@ -27,6 +27,7 @@ function page(name) {
   document.body.classList.toggle('mods-view', name === 'mods');
   document.body.classList.toggle('logs-view', name === 'logs');
   document.body.classList.toggle('news-view', name === 'news');
+  document.body.classList.toggle('settings-view', name === 'settings');
   document.querySelectorAll('.page').forEach(el => el.hidden = el.id !== name);
   document.querySelectorAll('.nav-button').forEach(el => el.classList.toggle('active', el.dataset.page === name || el.dataset.page === 'home' && ['mods', 'settings'].includes(name)));
   if (name === 'mods' && config) { updateModProfile(); refreshInstalled(); }
@@ -74,6 +75,7 @@ function updateControls() {
   $('resources-tab').disabled = locked || !ready;
   $('shaders-query').disabled = locked;
   $('shaders-search').querySelector('button').disabled = locked;
+  $('shaders-import').disabled = locked;
   $('shaders-more').disabled = locked || shaderSearchBusy;
   document.querySelectorAll('.mod-card button, .shader-card button').forEach(el => el.disabled = locked || el.dataset.installed === 'true');
 }
@@ -127,6 +129,7 @@ function flushLogs() {
 api.onEvent(event => {
   if (event.kind === 'versions-refreshed') { refreshedVersions = event.data; applyCatalogRefresh(); return; }
   if (event.kind === 'loaders-refreshed') { refreshedLoaders = event.data; applyCatalogRefresh(); return; }
+  if (event.kind === 'news-updated') { applyNews(event.data); return; }
   if (event.kind === 'playtime') showPlaytime(event.seconds);
   if (event.kind === 'mods-progress') {
     modStatus(event.message); if (!$('shaders-panel').hidden) $('shaders-status').textContent = event.message + (event.percent === null ? '' : ' ' + Math.round(event.percent) + '%'); $('mods-progress').hidden = false;
@@ -211,7 +214,7 @@ function updateModProfile() {
   if (!config) return;
   const loader = $('loader').value;
   $('mods-version').textContent = $('version').selectedOptions[0]?.textContent || config.version;
-  $('optifine-panel').hidden = true;
+  $('optifine-panel').hidden = modsTab !== 'mods' || !['optifine', 'forge_optifine'].includes(loader);
   $('loader-note').textContent = loader === 'vanilla' ? 'Для JAR-модов выбери Forge, NeoForge или Fabric.' : 'Загрузчик скачивается автоматически при нажатии «Играть».';
   $('mods-selection').textContent = modsTab !== 'mods' ? catalogLabels[catalogKind()] : 'Установлено';
   if (modsTab !== 'mods' && versionsReady && $('version').value && shaderProfile !== profileKey(current())) loadShaders();
@@ -402,6 +405,7 @@ function selectModsTab(name) {
   $('shaders-panel').scrollTop = 0;
   $('mods-installed').hidden = shaders;
   $('shaders-panel').hidden = !shaders;
+  $('optifine-panel').hidden = shaders || !['optifine', 'forge_optifine'].includes($('loader').value);
   $('mods-import').classList.toggle('inactive-action', shaders);
   modStatus('');
   for (const [id, tab] of contentTabs) {
@@ -427,6 +431,7 @@ document.querySelector('.mods-tabs').addEventListener('keydown', event => {
 });
 $('shaders-search').addEventListener('submit', event => { event.preventDefault(); if (!modsBusy) loadShaders(); });
 $('shaders-more').addEventListener('click', () => { if (!shaderSearchBusy) loadShaders(true); });
+$('shaders-import').addEventListener('click', () => modOperation(async () => { const files = await api.importShaders(current()); await refreshInstalled(); return files.length ? 'Добавлено шейдеров: ' + files.length + '.' : ''; }));
 
 async function checkLauncherUpdate() {
   if (updating || checkingUpdate) return;
@@ -474,7 +479,7 @@ async function showReleaseNews(automatic = false) {
   } catch (error) { log('Что нового: ' + error.message); }
 }
 const newsDate = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
-function formatNewsDate(value) { const time = Date.parse(value); return Number.isFinite(time) ? newsDate.format(time) : (value || ''); }
+function formatNewsDate(value) { const time = typeof value === 'number' ? value : Date.parse(value); return Number.isFinite(time) ? newsDate.format(time) : (value || ''); }
 function openNewsLink(event) {
   event.preventDefault();
   const url = event.currentTarget.dataset.url;
@@ -502,28 +507,30 @@ function renderNewsItems() {
   const more = $('news-load-more');
   more.hidden = newsVisible >= newsItems.length;
 }
+function applyNews(data) {
+  const launcher = data.launcher;
+  $('news-featured').hidden = !launcher;
+  if (launcher) {
+    $('news-launcher-title').textContent = launcher.title;
+    $('news-launcher-body').textContent = launcher.body || 'Обновлены функции и исправлены ошибки лаунчера.';
+    $('news-launcher-date').textContent = formatNewsDate(launcher.date);
+    const link = $('news-launcher-link'); link.dataset.url = launcher.url; link.onclick = openNewsLink;
+  }
+  newsItems = (data.minecraft || []).filter(item => item.title && item.url);
+  renderNewsItems();
+  const items = newsItems;
+  $('news-empty').hidden = items.length > 0 || Boolean(launcher);
+  $('news-empty').textContent = 'Новости пока недоступны. Проверь подключение к интернету.';
+  $('news-status-line').textContent = data.stale ? (data.updatedAt ? 'Нет связи · показаны сохранённые новости' : 'Нет связи с сервером новостей') : (data.updatedAt ? 'Обновлено ' + formatNewsDate(data.updatedAt) : '');
+  newsLoadedAt = data.stale ? 0 : Date.now();
+}
 async function refreshNews(force = false) {
   if (!api.news || newsLoading || (!force && Date.now() - newsLoadedAt < 60000)) return;
   newsLoading = true;
   try {
     const data = await api.news(force);
     const local = api.releaseNews ? await api.releaseNews().catch(() => null) : null;
-    const launcher = data.launcher || (local && { title: 'KOPEYKA ' + local.version, body: local.body, date: '', url: 'https://github.com/Arab228d/kopeyka-launcher/releases' });
-    $('news-featured').hidden = !launcher;
-    if (launcher) {
-      $('news-launcher-title').textContent = launcher.title;
-      $('news-launcher-body').textContent = launcher.body || 'Обновлены функции и исправлены ошибки лаунчера.';
-      $('news-launcher-date').textContent = formatNewsDate(launcher.date);
-      const link = $('news-launcher-link'); link.dataset.url = launcher.url; link.onclick = openNewsLink;
-    }
-    newsItems = (data.minecraft || []).filter(item => item.title && item.url);
-    newsVisible = Math.min(newsVisible, 12);
-    renderNewsItems();
-    const items = newsItems;
-    $('news-empty').hidden = items.length > 0 || Boolean(launcher);
-    $('news-empty').textContent = 'Новости пока недоступны. Проверь подключение к интернету.';
-    $('news-status-line').textContent = data.stale ? (data.updatedAt ? 'Нет связи · показаны сохранённые новости' : 'Нет связи с сервером новостей') : (data.updatedAt ? 'Обновлено ' + formatNewsDate(data.updatedAt) : '');
-    newsLoadedAt = data.stale ? 0 : Date.now();
+    applyNews({ ...data, launcher: data.launcher || (local && { title: 'KOPEYKA ' + local.version, body: local.body, date: '', url: 'https://github.com/Arab228d/kopeyka-launcher/releases' }) });
   } catch (error) { log('Новости: ' + error.message); $('news-empty').hidden = false; $('news-empty').textContent = 'Новости пока недоступны. Повтори позже.'; }
   finally { newsLoading = false; }
 }

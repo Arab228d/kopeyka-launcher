@@ -13,6 +13,23 @@
   let dots = 0;
   const animateDots = () => { if (completed) return; if (status) status.textContent = 'Загрузка' + '.'.repeat(dots = (dots + 1) % 4); dotsTimer = setTimeout(animateDots, 420); };
   dotsTimer = setTimeout(animateDots, 420);
+  // The splash stays on screen while the main process warms versions, loaders,
+  // updates and news. Mirror that progress so it never looks frozen.
+  api?.onEvent?.(event => {
+    if (event?.kind !== 'startup' || completed) return;
+    const row = document.querySelector(`[data-startup-check="${event.key}"]`);
+    if (row) {
+      row.dataset.state = event.state;
+      row.querySelector('.startup-check-result').textContent = event.text;
+      if (states.has(event.key) && event.state !== 'checking') states.set(event.key, event.state === 'done' ? 'done' : 'warning');
+    }
+    if (event.key === 'news') {
+      const detail = document.getElementById('startup-detail');
+      if (detail) detail.textContent = event.state === 'checking' ? 'Загружаем новости и обновления' : 'Открываем главное меню…';
+    }
+    const bar = document.getElementById('startup-progress');
+    if (bar) bar.value = [...states.values()].filter(state => state !== 'pending').length;
+  });
   document.querySelector('.startup-cube')?.style.setProperty('--startup-offset', `-${elapsed() / 1000}s`);
   for (const [id, action] of [['startup-minimize', 'minimizeWindow'], ['startup-close', 'closeWindow']]) {
     document.getElementById(id)?.addEventListener('click', () => api?.[action]?.().catch(() => {}));

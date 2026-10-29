@@ -1,5 +1,7 @@
 const fs = require('node:fs/promises');
+const { createReadStream } = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { profileDirectory, modrinth, mediaUrl } = require('./mods');
 const { downloadFile, validFile, inside } = require('./installer');
 async function searchShaders(config, query, offset = 0, request) {
@@ -35,4 +37,43 @@ async function installShader(config, project, report = () => {}, request) {
   await remember();
   return { file: file.filename, loaders: version.loaders };
 }
-module.exports = { searchShaders, installShader };
+async function importShaders(config, files) {
+  if (!Array.isArray(files) || files.some(file => typeof file !== 'string')) throw new Error('Выбери ZIP-архивы шейдеров.');
+  const root = profileDirectory(config);
+  const shaderpacksDir = inside(root, 'shaderpacks');
+  await fs.mkdir(shaderpacksDir, { recursive: true });
+  const names = new Map();
+  const jobs = [];
+  for (const file of files) {
+    const name = path.basename(file);
+    if (!/\.zip$/i.test(name)) throw new Error(`${name}: это не ZIP-архив.`);
+    if (!/^[^<>:"/\\|?*\x00-\x1f]+\.zip$/i.test(name) || name.startsWith('.') || /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:[ .]|$)/i.test(name)) throw new Error(`${name}: недопустимое имя архива.`);
+    const stat = await fs.stat(file);
+    const hash = crypto.createHash('sha1');
+    for await (const chunk of createReadStream(file)) hash.update(chunk);
+    const sha1 = hash.digest('hex');
+    if (names.has(name.toLowerCase())) {
+      if (names.get(name.toLowerCase()) !== sha1) throw new Error(`Выбраны разные шейдеры с одинаковым именем ${name}.`);
+      continue;
+    }
+    names.set(name.toLowerCase(), sha1);
+    const destination = inside(shaderpacksDir, name);
+    const descriptor = { sha1, size: stat.size };
+    let installed = false;
+    try { await fs.access(destination); installed = true; }
+    catch (error) { if (error.code !== 'ENOENT') throw error; }
+    if (installed && !await validFile(destination, descriptor)) throw new Error(`${name}: файл с таким именем уже существует в шейдерпаках.`);
+    if (installed) { jobs.push({ target: destination, destination, name, ...descriptor }); continue; }
+    const target = inside(root, '.downloads/import-shader-' + sha1 + '-' + name);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.copyFile(file, target);
+    jobs.push({ target, destination, name, ...descriptor });
+  }
+  for (const job of jobs) if (job.target !== job.destination) {
+    try { await fs.copyFile(job.target, job.destination, require('node:fs').constants.COPYFILE_EXCL); }
+    catch (error) { if (error.code !== 'EEXIST') throw error; if (!(await validFile(job.destination, { sha1: job.sha1, size: job.size }))) throw new Error(`${job.name} уже существует с другим содержимым.`); }
+  }
+  await Promise.all(jobs.filter(job => job.target !== job.destination).map(job => fs.unlink(job.target).catch(() => {})));
+  return jobs.map(v => v.name);
+}
+module.exports = { searchShaders, installShader, importShaders };

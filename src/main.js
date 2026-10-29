@@ -8,6 +8,7 @@ const { validateSettings } = require('./config');
 const { fetchJson, ensureJava, MANIFEST } = require('./engine');
 const { loadMinecraftTextures } = require('./minecraft-textures');
 const { prepareMinecraft } = require('./installer');
+const { versionCatalog } = require('./manifest');
 const mods = require('./mods');
 const shaders = require('./shaders');
 const { fetchCatalog } = require('./loader-catalog');
@@ -56,13 +57,13 @@ async function getManifest(refresh = false) {
     const cache = path.join(app.getPath('userData'), 'versions-cache.json');
     try {
       const fresh = await fetchJson(MANIFEST, (url, options) => fetch(url, { ...options, signal: AbortSignal.timeout(10000) }));
-      if (!Array.isArray(fresh?.versions) || !fresh.versions.length) throw new Error('Некорректный список версий Minecraft.');
+      versionCatalog(fresh);
       manifest = { ...fresh, source: 'network' };
     } catch (error) {
       if (!manifest) {
         try {
           const cached = JSON.parse(await fs.readFile(cache, 'utf8'));
-          if (!Array.isArray(cached?.versions) || !cached.versions.length) throw new Error('Некорректный список версий Minecraft.');
+          versionCatalog(cached);
           manifest = { ...cached, source: 'cache' };
         } catch { throw new Error('Не удалось получить версии Minecraft. Проверьте подключение к интернету.'); }
       }
@@ -70,7 +71,7 @@ async function getManifest(refresh = false) {
       manifest.source = 'cache';
       return manifest;
     }
-    try { await fs.writeFile(cache, JSON.stringify(manifest)); }
+    try { await jsonWriter(cache)(manifest); }
     catch (error) { send({ kind: 'log', message: 'Не удалось сохранить список версий: ' + error.message }); }
     return manifest;
   })().finally(() => { manifestTask = null; });
@@ -115,7 +116,15 @@ app.whenReady().then(async () => {
     window.center();
     await window.loadFile(path.join(__dirname, 'ui', 'index.html'));
   };
-  const splashFallback = setTimeout(() => openMainWindow().catch(() => {}), 10000);
+  // IPC handlers are registered only after settings, playtime and release news
+  // are loaded. Opening the main window earlier leaves the renderer without
+  // `launcher:settings` and it never becomes usable, so wait for registration.
+  let ipcReady = false;
+  const splashFallback = setInterval(() => {
+    if (!ipcReady) return;
+    clearInterval(splashFallback);
+    openMainWindow().catch(() => {});
+  }, 1000);
   await fs.mkdir(app.getPath('userData'), { recursive: true });
   const existingInstall = nativeFs.existsSync(path.join(stableData, "settings.json")) || legacyData.some(directory => nativeFs.existsSync(path.join(directory, "settings.json")));
   settings = await loadSettings(stableData, legacyData, defaults());
@@ -127,7 +136,7 @@ app.whenReady().then(async () => {
   await releaseNews.load();
   ipcMain.handle("launcher:release-news", () => releaseNews.current());
   ipcMain.handle("launcher:release-news-seen", () => releaseNews.acknowledge());
-  const newsFeed = createNewsFeed({ directory: stableData });
+  const newsFeed = createNewsFeed({ directory: stableData, onUpdate: data => send({ kind: 'news-updated', data }) });
   ipcMain.handle('launcher:news', (_, refresh) => newsFeed.get(refresh === true));
   // Warm the news cache during startup so the Новости page opens instantly.
   newsFeed.get().catch(() => {});
@@ -139,21 +148,25 @@ app.whenReady().then(async () => {
   powerMonitor.on('resume', () => { if (game) playtime.start(); });
   ipcMain.handle('launcher:settings', () => ({ ...settings, playtimeSeconds: playtime.total(), totalMemory: Math.floor(os.totalmem() / 1073741824), appVersion: app.getVersion() }));
   ipcMain.handle('launcher:textures', () => loadMinecraftTextures([settings.gameDirectory, defaults().gameDirectory, path.join(app.getPath('appData'), '.minecraft')], app.getPath('userData'), settings.version));
-  ipcMain.handle('launcher:save', (_, input) => { if (busy) throw new Error('Дождитесь завершения запуска.'); return save(input); });
+  ipcMain.handle('launcher:save', (_, input) => { if (busy || game) throw new Error('Дождитесь завершения запуска.'); return save(input); });
   const versionCatalog = backgroundCatalog(path.join(stableData, 'versions-cache.json'), () => getManifest(true), value => Array.isArray(value.versions) && value.versions.length > 0, value => send({kind:'versions-refreshed', data:value}));
   const loadersCached = backgroundCatalog(path.join(stableData, 'loader-catalog.json'), () => fetchCatalog(stableData), value => ['forge','fabric','neoforge','optifine'].some(key => value[key] && typeof value[key] === 'object'), value => send({kind:'loaders-refreshed', data:value}));
   ipcMain.handle('launcher:versions', async (_, refresh) => {
     const { value: data, source } = await versionCatalog.withSource(refresh === true);
     return { latest: data.latest, versions: data.versions.map(({ id, type }) => ({ id, type })), source: source === 'cache' ? source : data.source || source };
   });
-  let pendingUpdate;
+  let pendingUpdate, updateTask;
+  const checkForUpdate = () => {
+    if (!updateTask) updateTask = updates.checkUpdate(app.getVersion()).then(update => { pendingUpdate = update; updateTask = null; return update; }, error => { updateTask = null; throw error; });
+    return updateTask;
+  };
   ipcMain.handle('launcher:loader-catalog', async (_, refresh) => {
     const { value, source } = await loadersCached.withSource(refresh === true);
     return { ...value, source };
   });
   ipcMain.handle('launcher:update-check', async () => {
-    pendingUpdate = await updates.checkUpdate(app.getVersion());
-    return pendingUpdate ? {version: pendingUpdate.version} : null;
+    const update = await checkForUpdate();
+    return update ? {version: update.version} : null;
   });
   ipcMain.handle('launcher:update-install', async () => {
     if (!app.isPackaged) throw new Error('Обновление доступно в установленном лаунчере.');
@@ -185,6 +198,10 @@ app.whenReady().then(async () => {
     const result = await dialog.showOpenDialog(window, { title: 'Выбери моды', properties: ['openFile', 'multiSelections'], filters: [{ name: 'Minecraft mods', extensions: ['jar'] }] });
     return result.canceled ? [] : mods.importMods(checkedProfile(input), result.filePaths);
   }));
+  ipcMain.handle('launcher:shaders-import', (_, input) => modAction(async () => {
+    const result = await dialog.showOpenDialog(window, { title: 'Выбери ZIP-архивы шейдеров', properties: ['openFile', 'multiSelections'], filters: [{ name: 'ZIP-архивы шейдеров', extensions: ['zip'] }] });
+    return result.canceled ? [] : shaders.importShaders(checkedProfile(input), result.filePaths);
+  }));
   ipcMain.handle('launcher:mods-toggle', (_, input, file) => modAction(() => mods.toggleMod(checkedProfile(input), file)));
   ipcMain.handle('launcher:mods-copy', (_, source, target) => modAction(() => mods.copyMods(checkedProfile(source), checkedProfile(target))));
   ipcMain.handle('launcher:optifine-import', (_, input) => modAction(async () => {
@@ -206,7 +223,8 @@ app.whenReady().then(async () => {
     const result = await dialog.showSaveDialog(window, { title: 'Сохранить журнал запуска', defaultPath: 'KOPEYKA-launcher.log', filters: [{ name: 'Журнал', extensions: ['log'] }] });
     if (result.canceled || !result.filePath) return null;
     const file = path.join(app.getPath('userData'), 'launcher.log');
-    await fs.copyFile(file, result.filePath);
+    try { await fs.copyFile(file, result.filePath); }
+    catch (error) { if (error.code === 'ENOENT') throw new Error('Журнал пуст: сначала запусти Minecraft.'); throw error; }
     return result.filePath;
   });
   ipcMain.handle('launcher:launch', async (_, input) => {
@@ -299,7 +317,25 @@ app.whenReady().then(async () => {
       return { ok: false, error: error.message };
     } finally { finishOperation(); }
   });
-  clearTimeout(splashFallback);
+  // Load every page's data while the splash is still visible. The main window
+  // then opens with versions, loaders, updates and news already resolved, so
+  // tabs render from memory instead of waiting for their own network requests.
+  const warm = [];
+  const warmStep = (key, text, operation, done, failed) => {
+    send({ kind: 'startup', key, state: 'checking', text });
+    warm.push(Promise.resolve().then(operation).then(value => { send({ kind: 'startup', key, state: 'done', text: done(value) }); },
+      () => { send({ kind: 'startup', key, state: 'warning', text: failed }); }));
+  };
+  send({ kind: 'startup', key: 'settings', state: 'done', text: 'Загружены' });
+  warmStep('versions', 'Проверка…', () => versionCatalog.withSource(false), ({ source }) => source === 'cache' ? 'Сохранённый список' : 'Список получен', 'Недоступно');
+  warmStep('loaders', 'Проверка…', () => loadersCached.withSource(false), ({ value, source }) => source === 'cache' ? 'Сохранённый каталог' : value.errors?.length ? 'Часть серверов недоступна' : 'Каталог получен', 'Недоступно');
+  warmStep('updates', 'Проверка…', checkForUpdate, update => update ? 'Доступна ' + update.version : 'Актуальная версия', 'Недоступно');
+  warmStep('news', 'Загрузка…', () => newsFeed.get(), data => data.minecraft.length || data.launcher ? 'Новости готовы' : 'Новостей нет', 'Недоступно');
+  // Never hold the window hostage: slow or offline checks keep running while
+  // the renderer repeats them with its own deadlines.
+  await Promise.race([Promise.allSettled(warm), new Promise(resolve => setTimeout(resolve, 6000))]);
+  ipcReady = true;
+  clearInterval(splashFallback);
   await openMainWindow();
   if (process.env.KOPEYKA_SCREENSHOT) {
     setTimeout(async () => {

@@ -1,15 +1,20 @@
+// Sandboxed preload scripts cannot require local modules, so channel names are
+// repeated here. test/ipc-contract.test.js keeps them in sync with the shared
+// contract, and the JSDoc type below is checked by `npm run typecheck`.
 const { contextBridge, ipcRenderer } = require('electron');
-contextBridge.exposeInMainWorld('launcher', {
+
+/** @type {import('./ipc-contract').LauncherApi} */
+const api = {
   startupStartedAt: Number(process.argv.find(value => value.startsWith('--kopeyka-started-at='))?.split('=')[1]) || 0,
   minimizeWindow: () => ipcRenderer.invoke('launcher:window', 'minimize'),
   maximizeWindow: () => ipcRenderer.invoke('launcher:window', 'maximize'),
   closeWindow: () => ipcRenderer.invoke('launcher:window', 'close'),
   windowState: () => ipcRenderer.invoke('launcher:window', 'state'),
   onWindowState: handler => { ipcRenderer.on('launcher:window-state', (_, state) => handler(state)); },
-  releaseNews: () => ipcRenderer.invoke("launcher:release-news"),
+  releaseNews: () => ipcRenderer.invoke('launcher:release-news'),
   news: refresh => ipcRenderer.invoke('launcher:news', refresh),
   openExternal: url => ipcRenderer.invoke('launcher:open-external', url),
-  acknowledgeNews: () => ipcRenderer.invoke("launcher:release-news-seen"),
+  acknowledgeNews: () => ipcRenderer.invoke('launcher:release-news-seen'),
   settings: () => ipcRenderer.invoke('launcher:settings'),
   avatar: nickname => ipcRenderer.invoke('launcher:avatar', nickname),
   save: settings => ipcRenderer.invoke('launcher:save', settings),
@@ -29,9 +34,12 @@ contextBridge.exposeInMainWorld('launcher', {
   listMods: settings => ipcRenderer.invoke('launcher:mods-list', settings),
   listInstalled: settings => ipcRenderer.invoke('launcher:content-list', settings),
   importMods: settings => ipcRenderer.invoke('launcher:mods-import', settings),
+  importShaders: settings => ipcRenderer.invoke('launcher:shaders-import', settings),
   toggleMod: (settings, file) => ipcRenderer.invoke('launcher:mods-toggle', settings, file),
   copyMods: (source, target) => ipcRenderer.invoke('launcher:mods-copy', source, target),
   importOptifine: settings => ipcRenderer.invoke('launcher:optifine-import', settings),
   optifineSite: () => ipcRenderer.invoke('launcher:optifine-site'),
   onEvent: handler => { ipcRenderer.on('launcher:event', (_, event) => handler(event)); }
-});
+};
+
+contextBridge.exposeInMainWorld('launcher', api);

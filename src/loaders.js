@@ -7,15 +7,28 @@ const { downloadFile, inside } = require('./installer');
 const { profileDirectory } = require('./mods');
 const { downloadOptifine } = require('./optifine');
 const { fetchCatalog } = require('./loader-catalog');
+const manifest = require('./manifest');
 const FORGE = 'https://maven.minecraftforge.net/net/minecraftforge/forge';
 async function loaderChoices(version) {
   const [forge, fabric] = await Promise.allSettled([
-    fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json'),
-    fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${encodeURIComponent(version)}`)
+    fetchJson('https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json').then(value => {
+      if (!value || typeof value.promos !== 'object' || value.promos === null) throw new Error('Forge вернул некорректный список версий.');
+      return value;
+    }),
+    fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${encodeURIComponent(version)}`).then(value => {
+      if (!Array.isArray(value)) throw new Error('Fabric вернул некорректный список версий.');
+      return value;
+    })
   ]);
   return { forge: forge.status === 'fulfilled' ? forge.value.promos[`${version}-recommended`] || forge.value.promos[`${version}-latest`] || null : null,
-    fabric: fabric.status === 'fulfilled' ? (fabric.value.find(v => v.loader.stable) || fabric.value[0])?.loader.version || null : null,
+    fabric: fabric.status === 'fulfilled' ? (fabric.value.find(v => v?.loader?.stable) || fabric.value[0])?.loader?.version || null : null,
     errors: [forge, fabric].some(v => v.status === 'rejected') };
+}
+function installerJson(zip, label) {
+  const name = zip.getEntry('version.json') ? 'version.json' : 'install_profile.json';
+  const entry = zip.getEntry(name);
+  if (!entry) throw new Error(`В установщике ${label} нет профиля версии.`);
+  return manifest.parseJson(zip.readAsText(entry), `профиль установщика ${label}`);
 }
 function runJava(java, args, cwd, send = () => {}, timeout = 600000) {
   return new Promise((resolve, reject) => {
@@ -50,7 +63,10 @@ async function prepareLoader(config, metadata, java, send) {
   await fs.mkdir(gameDirectory, { recursive: true });
   const marker = path.join(gameDirectory, 'loader-installed.json');
   let id, combo;
-  try { const cached = JSON.parse(await fs.readFile(marker, 'utf8')); id = cached.id; combo = cached.combo; await fs.access(inside(root, `versions/${id}/${id}.json`)); } catch { id = null; }
+  try {
+    const cached = manifest.installerMarker(manifest.parseJson(await fs.readFile(marker, 'utf8'), 'маркер установки загрузчика'));
+    id = cached.id; combo = cached.combo; await fs.access(inside(root, `versions/${id}/${id}.json`));
+  } catch { id = null; }
   if (config.loader === 'forge_optifine' && (!id || !combo)) {
     const catalog = await fetchCatalog(path.join(root, '.catalog'));
     combo = catalog.forge_optifine?.[config.version];
@@ -65,6 +81,7 @@ async function prepareLoader(config, metadata, java, send) {
       const choices = await loaderChoices(config.version);
       if (!choices.fabric) throw new Error('Fabric недоступен для этой версии или сервер не отвечает.');
       const profile = await fetchJson(`https://meta.fabricmc.net/v2/versions/loader/${encodeURIComponent(config.version)}/${choices.fabric}/profile/json`);
+      manifest.fabricProfile(profile);
       id = profile.id;
       const directory = inside(root, `versions/${id}`); await fs.mkdir(directory, { recursive: true });
       await fs.writeFile(inside(directory, `${id}.json`), JSON.stringify(profile));
@@ -81,9 +98,7 @@ async function prepareLoader(config, metadata, java, send) {
       await runJava(java, ['-jar', installer, '--installClient', root, '--mirror', 'https://maven.minecraftforge.net/'], root, send);
       id = `${config.version}-forge-${choices.forge}`;
       // Older installers use a different id; read the installer's own profile.
-      const zip = new AdmZip(installer);
-      const profile = JSON.parse(zip.readAsText(zip.getEntry('version.json') ? 'version.json' : 'install_profile.json'));
-      id = profile.id || profile.versionInfo?.id || id;
+      id = manifest.forgeProfile(installerJson(new AdmZip(installer), 'Forge'), id);
     } else if (config.loader === 'neoforge') {
       const catalog = await fetchCatalog(path.join(root, '.catalog'));
       const version = catalog.neoforge?.[config.version];
@@ -95,16 +110,18 @@ async function prepareLoader(config, metadata, java, send) {
       await downloadFile({url, sha1: (await checksum.text()).trim().split(/\s/)[0]}, installer, (done,total) => send({kind:'progress',message:'Загрузка NeoForge…',percent:total ? done / total * 100 : null}));
       await ensureLauncherProfiles(root);
       await runJava(java, ['-jar', installer, '--installClient', root], root, send);
-      const zip = new AdmZip(installer);
-      id = JSON.parse(zip.readAsText('version.json')).id;
+      const profile = installerJson(new AdmZip(installer), 'NeoForge');
+      id = manifest.neoforgeProfile(profile).id;
     } else if (config.loader === 'optifine') {
       const installer = path.join(gameDirectory, 'optifine-installer.jar');
       try { await fs.access(installer); await fs.access(path.join(gameDirectory, 'optifine.json')); } catch { await importOptifine(config, await downloadOptifine(config, send)); }
       await ensureLauncherProfiles(root);
-      await fs.copyFile(path.join(__dirname, 'optifine-helper', 'KopeykaOptifineInstall.class'), path.join(gameDirectory, 'KopeykaOptifineInstall.class'));
+      const helper = await optifineHelper();
+      await fs.copyFile(helper, path.join(gameDirectory, 'KopeykaOptifineInstall.class'));
       await runJava(java, ['-Djava.awt.headless=true', '-cp', `${gameDirectory}${path.delimiter}${installer}`, 'KopeykaOptifineInstall', root], root, send);
-      id = JSON.parse(await fs.readFile(path.join(gameDirectory, 'optifine.json'), 'utf8')).id;
-      const installed = JSON.parse(await fs.readFile(inside(root, `versions/${id}/${id}.json`), 'utf8'));
+      const marker = manifest.optifineMarker(manifest.parseJson(await fs.readFile(path.join(gameDirectory, 'optifine.json'), 'utf8'), 'файл OptiFine'));
+      id = marker.id;
+      const installed = manifest.loaderProfile(manifest.parseJson(await fs.readFile(inside(root, `versions/${id}/${id}.json`), 'utf8'), `профиль OptiFine ${id}`), id);
       if (installed.inheritsFrom !== config.version) throw new Error('OptiFine не создал профиль для выбранной версии.');
     }
     await fs.access(inside(root, `versions/${id}/${id}.json`));
@@ -113,7 +130,7 @@ async function prepareLoader(config, metadata, java, send) {
   }
   else if (combo && config.loader === 'forge_optifine') await installForgeOptifine(config, combo, send);
   const file = inside(root, `versions/${id}/${id}.json`);
-  const profile = JSON.parse(await fs.readFile(file, 'utf8'));
+  const profile = manifest.loaderProfile(manifest.parseJson(await fs.readFile(file, 'utf8'), `профиль загрузчика ${id}`), id);
   const combined = { ...profile, arguments: { ...metadata.arguments, ...profile.arguments, game: [...(metadata.arguments?.game || []), ...(profile.arguments?.game || [])] } };
   if (profile.minecraftArguments) combined.minecraftArguments = profile.minecraftArguments;
   else if (metadata.minecraftArguments && !profile.arguments?.game?.length) combined.minecraftArguments = metadata.minecraftArguments;
@@ -129,6 +146,16 @@ async function prepareLoader(config, metadata, java, send) {
 async function ensureLauncherProfiles(root) {
   const file = path.join(root, 'launcher_profiles.json');
   try { await fs.access(file); } catch { await fs.writeFile(file, JSON.stringify({ profiles: {}, selectedProfile: '', clientToken: '', authenticationDatabase: {}, launcherVersion: { name: 'KOPEYKA', format: 21 } })); }
+}
+// Installer builds compile the helper during prepare:runtimes. A source checkout
+// can still build it on demand when a JDK is available.
+async function optifineHelper() {
+  const helper = path.join(__dirname, 'optifine-helper', 'KopeykaOptifineInstall.class');
+  try { await fs.access(helper); return helper; } catch {}
+  try { require('./optifine-helper/compile').compile(); }
+  catch (error) { throw new Error(`Хелпер OptiFine не собран: ${error.message} Запустите npm run build:optifine-helper.`); }
+  await fs.access(helper);
+  return helper;
 }
 async function installForgeOptifine(config, combo, send = () => {}, request = fetch) {
   validateCombo(config, combo);

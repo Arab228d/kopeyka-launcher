@@ -101,7 +101,7 @@ function parseLauncherContent(data) {
 
 const emptyCache = () => ({ schema: CACHE_SCHEMA, at: 0, launcher: null, minecraft: [], translations: {} });
 
-function createNewsFeed({ directory, request = fetch, now = Date.now }) {
+function createNewsFeed({ directory, request = fetch, now = Date.now, onUpdate }) {
   const file = path.join(directory, 'news-cache.json');
   const write = jsonWriter(file);
   let cache, task;
@@ -183,6 +183,8 @@ function createNewsFeed({ directory, request = fetch, now = Date.now }) {
     if (minecraft.status === 'fulfilled' && minecraft.value.length) cache.minecraft = minecraft.value; else failed = true;
     if (!failed) cache.at = now();
     await write(cache).catch(() => {});
+    // Let the launcher update an already open Новости page without another round trip.
+    onUpdate?.({ launcher: cache.launcher, minecraft: cache.minecraft, updatedAt: cache.at, stale: failed });
     return failed;
   }
 

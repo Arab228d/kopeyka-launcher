@@ -1,42 +1,42 @@
 /* Mods shares the artwork and glass surfaces of the home screen. */
 body.mods-view main { background: transparent; }
 body.mods-view main::before, body.mods-view main::after { display: none; }
-#mods { height: var(--content-height); padding: 24px 0 12px; gap: 18px; position: relative; background: #10202f45; backdrop-filter: blur(14px) saturate(.8); }
+#mods { height: var(--content-height); padding: 24px 0 12px; gap: 18px; position: relative; }
 .mods-heading { min-height: 84px; padding: 0 4px 14px; border-bottom: 1px solid #d6e5f52b; }
 .mods-heading h2 { font-size: 22px; text-shadow: 2px 3px #102231; margin: 0 0 12px; }
 .mods-caption { margin: 0; font: 12px 'Segoe UI',sans-serif; color: #d0dce6; }
 .mods-branding { width: 220px; }
 #mods-java-logo { width: 100px; }
-.mods-profile { padding: 16px 20px; background: #10223155; border: 8px solid transparent; border-image: var(--frame-normal) 12 / 10px / 0 stretch; box-shadow: none; clip-path: var(--surface-shape); }
+.mods-profile { padding: 16px 20px; background: rgba(10,21,32,.96); border: 8px solid transparent; border-image: var(--frame-normal) 12 / 10px / 0 stretch; box-shadow: none; clip-path: var(--surface-shape); }
 .mods-profile::before { display: none; }
-.mods-profile label { color: #d4c492; }
-.mods-profile label span { margin-top: 7px; color: #f2f6fa; font-size: 9px; }
-#loader-note { color: #c5d4e1; max-width: 270px; }
+.mods-profile label { color: #e2c36b; font-size: 9px; text-shadow: 1px 2px #0b1622; }
+.mods-profile label span { margin-top: 7px; color: #f2f6fa; font-size: 11px; }
+#loader-note { color: #dbe7ef; max-width: 270px; text-shadow: 1px 2px #0b1622; }
 #optifine-panel { display: none; }
-#mods .secondary-button, #shaders-panel .secondary-button, .update-pill { border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; background: #20344780; box-shadow: none; clip-path: var(--surface-shape); color: #e9f3fb; padding: 6px 12px; transition: background .18s, filter .18s, transform .18s; }
+#mods .secondary-button, #shaders-panel .secondary-button, .update-pill { border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; background: #16293bd9; box-shadow: none; clip-path: var(--surface-shape); color: #e9f3fb; padding: 6px 12px; transition: background .18s, filter .18s, transform .18s; }
 #mods .secondary-button:hover:not(:disabled), #shaders-panel .secondary-button:hover:not(:disabled), .update-pill:hover:not(:disabled) { border-image-source: var(--frame-hover); background: #37577699; filter: drop-shadow(0 0 5px #b5d9ff33); }
 .mods-tabs { display: flex; gap: 12px; border: 0; padding: 0; }
 #mods .mods-tabs .secondary-button { min-width: 140px; min-height: 44px; padding: 8px 16px; font-size: 9px; }
-#mods .mods-tabs .active { border-image-source: var(--frame-gold); color: #ffe5a1; background: #84672c40; }
+#mods .mods-tabs .active { border-image-source: var(--frame-gold); color: #ffe5a1; background: #7a6328d9; }
 .mods-scroll { padding: 0 4px 8px; }
-.mods-hint { color: #c1d1df; margin: 0 0 16px; }
-.mods-empty { border: 0; background: #10213142; min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; clip-path: var(--surface-shape); padding: 30px; }
+.mods-hint { color: #cbd8e3; margin: 0 0 16px; }
+.mods-empty { border: 0; background: rgba(8,18,28,.9); min-height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; clip-path: var(--surface-shape); padding: 30px; }
 .mods-empty strong { color: #e4eff7; font: 12px/1.8 PlayPixel,monospace; }
 .mods-empty p { color: #bccedc; font: 13px/1.8 'Segoe UI',sans-serif; max-width: 390px; margin: 0; }
 .empty-mod-icon { width: 52px; height: 52px; background: url('assets/sidebar-icons/mod-cube.svg') center / contain no-repeat; filter: drop-shadow(0 8px 16px #04132277); }
-#mods .mod-card { background: #11243855; border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; clip-path: var(--surface-shape); box-shadow: none; padding: 0; }
+#mods .mod-card { background: rgba(12,26,40,.93); border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; clip-path: var(--surface-shape); box-shadow: none; padding: 0; }
 #mods .mod-card::before { display: none; }
 #mods .mod-media { background: #172c3f55; border: 0; }
 #mods .mod-media::before { display: none; }
-.mods-footer { background: transparent; border: 0; border-top: 1px solid #cadfee33; padding: 10px 4px; box-shadow: none; }
-#mods-selection { color: #d6e8f5; }
-#mods-status { color: #becfdd; }
+.mods-footer { background: rgba(9,20,31,.96); border: 0; border-top: 1px solid #cadfee33; padding: 10px 4px; box-shadow: none; }
+#mods-selection { color: #e8f2fb; font-size: 10px; text-shadow: 1px 2px #0b1622; }
+#mods-status { color: #d3e1ec; font-size: 11px; text-shadow: 1px 2px #0b1622; }
 #shaders-panel .shader-heading h2 { font-size: 18px; color: #ecf6fd; }
 #shaders-panel .shader-hint { color: #d0deea; }
-#shaders-panel .mods-search input { background: #10293b66; border: 2px solid #9dbed066; border-radius: 0; clip-path: var(--surface-shape); box-shadow: none; padding-left: 14px; color: #f2f8fd; }
-.shader-card { background: #19304470; border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; clip-path: var(--surface-shape); padding: 0; }
+#shaders-panel .mods-search input { background: #101f2e; border: 2px solid #9dbed066; border-radius: 0; clip-path: var(--surface-shape); box-shadow: none; padding-left: 14px; color: #f2f8fd; }
+.shader-card { background: rgba(13,29,44,.93); border: 7px solid transparent; border-image: var(--frame-normal) 12 / 9px / 0 stretch; border-radius: 0; clip-path: var(--surface-shape); padding: 0; }
 .shader-card .mod-media { border: 0; margin: 0; background: #142a3c55; height: 160px; }
-#shaders-panel .shader-card .secondary-button { border-image-source: var(--frame-gold); background: #82702d44; color: #fff0bf; padding: 8px 12px; }
+#shaders-panel .shader-card .secondary-button { border-image-source: var(--frame-gold); background: #7a6328d9; color: #fff0bf; padding: 8px 12px; }
 .shader-card .mod-body { padding: 14px; }
 .shader-card strong { font-size: 15px; }
 .shader-card p { min-height: 38px; }
@@ -46,7 +46,5 @@ body.mods-view main::before, body.mods-view main::after { display: none; }
 @media(max-height:800px) { #mods { padding-top: 12px; gap: 12px; } .mods-heading { min-height: 68px; } .mods-empty { min-height: 200px; } }
 @media(max-width:1100px) { .mods-branding { width: 175px; } #loader-note { max-width: 210px; } }
 @media(prefers-reduced-motion:reduce) { #mods .secondary-button, #shaders-panel .secondary-button, .update-pill { transition: none; } }
-#settings .setting-row { padding: 14px 0; }
 #update-status { max-width: 310px; line-height: 1.4; overflow-wrap: anywhere; }
-.update-actions .secondary-button { padding: 7px 9px; font-size: 7px; }
-@media(max-height:800px) { #settings .page-intro { padding: 10px 0; margin-bottom: 14px; } #settings .setting-row { padding: 10px 0; } #settings .save-button { margin-top: 14px; } }
+.update-actions .secondary-button { padding: 7px 9px; font-size: 8px; }
