@@ -19,7 +19,7 @@
 
 ## Скачать
 
-Открой [страницу релизов](https://github.com/Arab228d/kopeyka-launcher/releases). Установщик Windows публикуется отдельно после сборки пакета.
+Открой [релиз 0.2.0-beta](https://github.com/Arab228d/kopeyka-launcher/releases/tag/v0.2.0-beta). Установщик Windows публикуется отдельно после сборки пакета.
 
 ## Запуск из исходников
 
