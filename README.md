@@ -1,6 +1,8 @@
 # KOPEYKA Launcher 0.2.0-beta
 
-Пиксельный Minecraft Java лаунчер для Windows. Версия 0.2 beta собирает управление версиями, загрузчиками и контентом в одну рабочую оболочку.
+Пиксельный лаунчер Minecraft Java для Windows. Версия 0.2 beta собирает управление версиями, загрузчиками и контентом в одну рабочую оболочку.
+
+![KOPEYKA Launcher](docs/screenshot.png)
 
 ## Что умеет
 
@@ -17,7 +19,7 @@
 
 ## Скачать
 
-Открой [релиз 0.2.0-beta](https://github.com/Arab228d/kopeyka-launcher/releases/tag/v0.2.0-beta). Установщик Windows публикуется отдельно после сборки пакета.
+Открой [страницу релизов](https://github.com/Arab228d/kopeyka-launcher/releases). Установщик Windows публикуется отдельно после сборки пакета.
 
 ## Запуск из исходников
 
@@ -47,7 +49,7 @@ npm run build:installer
 
 ## Где хранятся данные
 
-По умолчанию данные находятся в `%USERPROFILE%\\.kopeyka\\launcher`, а игровые файлы — в `%USERPROFILE%\\.kopeyka\\minecraft`. Папку игры можно изменить в настройках.
+По умолчанию данные находятся в `%USERPROFILE%\.kopeyka\launcher`, а игровые файлы — в `%USERPROFILE%\.kopeyka\minecraft`. Папку игры можно изменить в настройках.
 
 Моды хранятся отдельно для каждой сборки:
 

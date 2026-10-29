@@ -1,9 +1,12 @@
 # KOPEYKA 0.2.0-beta
 
-Beta release focused on a safer startup flow, profile-aware mod management, and a more consistent pixel UI.
+Beta release focused on safer manifest handling, a typed IPC bridge and a more consistent pixel UI.
 
 ## Highlights
 
+- Runtime validation of Mojang, Forge, NeoForge and Fabric manifests with readable error messages.
+- Shared IPC contract (JSDoc + `checkJs`): the preload bridge is checked against every main-process handler without a TypeScript build step.
+- The OptiFine helper is compiled from source during `prepare:runtimes`; the `.class` file is no longer stored in git.
 - Copy installed mod sets between version/loader profiles.
 - Keep the launcher responsive when Minecraft omits its usual ready line.
 - Dedicated compact startup window with a bounded fallback.
@@ -12,5 +15,5 @@ Beta release focused on a safer startup flow, profile-aware mod management, and 
 
 ## Validation
 
-- 75 automated tests passing.
+- 99 automated tests passing, including the IPC type check.
 - UI smoke suite passing on Windows.
